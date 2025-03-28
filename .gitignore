@@ -1,0 +1,19 @@
+# Entorno virtual
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Django
+*.sqlite3
+db.sqlite3
+
+# Archivos de entorno
+.env
+.env.local
+
+# Si usas React/Node (opcional)
+node_modules/

@@ -1,0 +1,341 @@
+
+.inventario{
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    .navegador{
+        margin: 10px 0px 0px 0px;
+        width: 80%;
+        display: flex;
+        a{
+            margin-right: 10px;
+            color: #0ba7a7;
+            h3{
+                font-size: 30px;
+                margin: 10px 0px;
+            }
+        }
+        a:hover{
+            text-shadow: #4b4b4b 2px 2px 2px;
+        }
+        .slash{
+            margin-right: 10px;
+            color: #0ba7a7;
+            h3{
+                font-size: 30px;
+                margin: 10px 0px;
+            }
+            
+        }
+    }
+    .c-principal{
+        margin: 20px 0px;
+        width: 80%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+
+        .o1{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 100%;
+            padding: 20px;
+            .i1{
+                text-align: center;
+                text-decoration: none;
+                color: #0ba7a7;
+                padding: 5px;
+                display: flex;
+                justify-content: center;
+                width: 300px;
+                flex-wrap: wrap;
+                transition: all ease 0.2s;
+                img{
+                    width: 100%;
+                    margin-bottom: 20px;
+                    padding: 20px;
+                }
+                h3{
+                    font-size: 24px;
+                    margin: 0px 0px 10px 0px;
+                    font-weight: bold;
+                    padding: 20px;
+                    transition: all ease 0.2s;
+                }
+            }
+            .i1:hover{
+                border: solid #0ba7a7 5px;
+                h3{
+                    text-shadow: #4b4b4b 2px 2px 2px;
+                    
+                }
+            }
+            
+        }
+        
+
+        .crear{
+            border: solid 2px #4b4b4b;
+            border-radius: 10px;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            box-shadow: 2px 2px 2px;
+            h2{
+                text-align: center;
+                width: 100%;
+                padding: 10px 0px 10px 0px;
+                background: #0ba7a7;
+                color: #f0f9ee;
+            }
+            form{
+                width: 90%;
+                .f1{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-around;
+                    margin: 20px 0px;
+                    
+                    .rm-codigo{
+                        width: 10%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rm-nombre{
+                        width: 70%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+
+                    .cm-nombre{
+                        width: 70%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    
+                }
+                .f2{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-around;
+                    margin: 20px 0px;
+
+                    .rm-categoria{
+                        width: 23%;
+                        select{
+                            width: 100%;
+                            padding: 8px 1px;
+                        }
+                    }
+
+                    .rm-umedida{
+                        width: 23%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rm-cantidad{
+                        width: 23%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                }
+            }
+        }
+
+        .importar{
+            border: solid 2px #4b4b4b;
+            border-radius: 10px;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            box-shadow: 2px 2px 2px;
+            margin-top: 10px;
+            h2{
+                text-align: center;
+                width: 100%;
+                padding: 10px 0px 10px 0px;
+                background: #0ba7a7;
+                color: #f0f9ee;
+            }
+        }
+
+        .mostrar{
+            width: 100%;
+            h2{
+                text-align: center;
+                margin: 40px 0px;
+                text-decoration: underline;
+            }
+            table{
+                width: 100%;
+                text-align: center;
+
+                thead{
+                    tr{
+                        th{
+                            border-bottom: solid 2px;
+                            font-weight: bold;
+                            font-size: 15px;
+                        }
+                        .cm-id{
+                            width: 5%;
+                        }
+                        .cm-nombre{
+                            width: 75%;
+                        }
+                        .cm-opciones{
+                            width: 20%;
+                        }
+
+
+
+
+                        .m-id{
+                            width: 5%;
+                            cursor: pointer;
+                        }
+
+                        .m-codigo{
+                            cursor: pointer;
+                        }
+                        
+                        .m-nombre{
+                            width: 20%;
+                            cursor: pointer;
+                        }
+
+                        .m-categoria{
+                            cursor: pointer;
+                        }
+
+                        .m-umedida{
+                            cursor: pointer;
+                        }
+
+                        .m-cantidad{
+                            cursor: pointer;
+                        }
+
+                        .m-opciones{
+                            width: 20%;
+                        }
+                    }
+                    
+                }
+
+                tbody{
+                    td{
+                        font-size: 12px;
+                        padding: 5px 0px;
+                        
+                        
+                    }
+                    .m-btn{
+                        display: flex;
+                        justify-content: space-around;
+                        
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.5);
+
+    .detalle-cat {
+        width: 500px;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+
+        h2{
+            text-align: center;
+            text-decoration: underline;
+        }
+
+        .em-nombre{
+            width: 100;
+
+            input{
+                width: 97%;
+                margin: 5px auto 15px auto
+            }
+        }
+
+        .em-codigo{
+            width: 100;
+
+            input{
+                width: 97%;
+                margin: 5px auto 15px auto
+            }
+        }
+
+        .em-categoria{
+            width: 100;
+
+            select{
+                width: 97%;
+                margin: 5px auto 15px auto
+            }
+        }
+
+        .em-umedida{
+            width: 100;
+
+            input{
+                width: 97%;
+                margin: 5px auto 15px auto
+            }
+        }
+        .em-cantidad{
+            width: 100;
+
+            input{
+                width: 97%;
+                margin: 5px auto 15px auto
+            }
+        }
+
+        .em-btn{
+            display: flex;
+            justify-content: center;
+        }
+    }
+    
+    .modal-open .modal {
+        pointer-events: all;
+    }
+}
+
+.modal-open .detalle-cat {
+    pointer-events: all; /* Asegura la interacción dentro del modal */
+}

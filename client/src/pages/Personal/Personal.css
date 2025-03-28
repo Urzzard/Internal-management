@@ -1,0 +1,717 @@
+.personal{
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    .navegador{
+        margin: 10px 0px 0px 0px;
+        width: 80%;
+        display: flex;
+        a{
+            margin-right: 10px;
+            color: #0ba7a7;
+            h3{
+                font-size: 30px;
+                margin: 10px 0px;
+            }
+        }
+        a:hover{
+            text-shadow: #4b4b4b 2px 2px 2px;
+        }
+        .slash{
+            margin-right: 10px;
+            color: #0ba7a7;
+            h3{
+                font-size: 30px;
+                margin: 10px 0px;
+            }
+            
+        }
+    }
+    .c-principal{
+        margin: 20px 0px;
+        width: 80%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+
+        .o1{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 100%;
+            padding: 20px;
+            .i1{
+                text-align: center;
+                text-decoration: none;
+                color: #0ba7a7;
+                padding: 5px;
+                display: flex;
+                justify-content: center;
+                width: 300px;
+                flex-wrap: wrap;
+                transition: all ease 0.2s;
+                img{
+                    width: 100%;
+                    margin-bottom: 20px;
+                    padding: 20px;
+                }
+                h3{
+                    font-size: 24px;
+                    margin: 0px 0px 10px 0px;
+                    font-weight: bold;
+                    padding: 20px;
+                    transition: all ease 0.2s;
+                }
+            }
+            .i1:hover{
+                border: solid #0ba7a7 5px;
+                h3{
+                    text-shadow: #4b4b4b 2px 2px 2px;
+                    
+                }
+            }
+            
+        }
+        
+
+        .crear{
+            border: solid 2px #4b4b4b;
+            border-radius: 10px;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            box-shadow: 2px 2px 2px;
+            h2{
+                text-align: center;
+                width: 100%;
+                padding: 10px 0px 10px 0px;
+                background: #0ba7a7;
+                border-radius: 10px;
+                color: #f0f9ee;
+            }
+            form{
+                width: 90%;
+                .f1{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
+                    margin: 20px 0px;
+                    
+                    .rp-nombre{
+                        width: 20%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rp-a_paterno{
+                        width: 20%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+
+                    .rp-a_materno{
+                        width: 20%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+
+                    .rp-dni{
+                        width: 20%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    
+                }
+                .f2{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
+                    margin: 20px 0px;
+
+                    .rp-dni_img{
+                        width: 15%; 
+                        input{
+                            width: 100%;
+                        }
+                        /* .custom-file-input {
+                            opacity: 0; Oculta el input
+                            position: absolute; Lo posiciona encima del botón
+                            z-index: 1; Asegura que esté por encima del botón
+                            cursor: pointer; Cambia el cursor al pasar sobre el botón
+                        }
+                        .custom-file-button {
+                            background-color: #0ba7a7; Color de fondo
+                            color: white; Color del texto
+                            padding: 10px 20px; Espaciado interno
+                            border-radius: 5px; Bordes redondeados
+                            cursor: pointer; Cambia el cursor al pasar sobre el botón
+                            display: inline-block; Asegura que el botón no ocupe toda la línea
+                            font-size: 14px; Tamaño del texto
+                            text-align: center; Centra el texto
+                        }
+                        
+                        .custom-file-button:hover {
+                            background-color: #076868; Cambia el color al pasar el mouse
+                        } */
+                    }
+
+                    .rp-f_nacimiento{
+                        width: 15%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+
+                    .rp-edad{
+                        width: 10%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rp-celular{
+                        width: 15%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+
+                    .rp-nro_emergencia{
+                        width: 15%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                }
+
+                .f3{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
+                    margin: 20px 0px;
+
+                    .rp-pais{
+                        width: 20%;
+                        select{
+                            width: 100%;
+                        }
+                    }
+
+                    .rp-region{
+                        width: 20%;
+                        select{
+                            width: 100%;
+                        }
+                    }
+                    .rp-provincia{
+                        width: 20%;
+                        select{
+                            width: 100%;
+                        }
+                    }
+                    .rp-distrito{
+                        width: 20%;
+                        select{
+                            width: 100%;
+                        }
+                    }
+                }
+
+                .f4{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
+                    margin: 20px 0px;
+
+                    
+
+                    .rp-sexo{
+                        width: 10%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+
+                    .rp-e_civil{
+                        width: 10%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rp-direccion{
+                        width: 30%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rp-t_polo{
+                        width: 10%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rp-t_pantalon{
+                        width: 10%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rp-t_zapato{
+                        width: 10%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                }
+
+                .f5{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
+                    margin: 20px 0px;
+
+                    .rp-email{
+                        width: 30%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+
+                    .rp-f_ingreso{
+                        width: 20%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rp-cuenta_corriente{
+                        width: 20%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+
+                    .rp-cci{
+                        width: 20%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+
+                    
+                }
+                .f6{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: space-between;
+                    margin: 20px 0px;
+
+                    .rp-tipo_usuario{
+                        width: 12%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rp-estado{
+                        width: 15%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                    .rp-loguear{
+                        width: 12%;
+                        input{
+                            width: 100%;
+                        }
+                    }
+                }
+            }
+        }
+
+        .mostrar{
+            width: 100%;
+            h2{
+                text-align: center;
+                margin: 40px 0px;
+                text-decoration: underline;
+            }
+            table{
+                width: 100%;
+                text-align: center;
+
+                thead{
+                    tr{
+                        th{
+                            border-bottom: solid 2px;
+                            font-weight: bold;
+                            font-size: 15px;
+                        }
+                        .cm-id{
+                            width: 5%;
+                        }
+                        .cm-nombre{
+                            width: 75%;
+                        }
+                        .cm-opciones{
+                            width: 20%;
+                        }
+
+
+
+
+                        .m-id{
+                            width: 5%;
+                            cursor: pointer;
+                        }
+
+                        .m-codigo{
+                            cursor: pointer;
+                        }
+                        
+                        .m-nombre{
+                            width: 20%;
+                            cursor: pointer;
+                        }
+
+                        .m-categoria{
+                            cursor: pointer;
+                        }
+
+                        .m-umedida{
+                            cursor: pointer;
+                        }
+
+                        .m-cantidad{
+                            cursor: pointer;
+                        }
+
+                        .m-opciones{
+                            width: 20%;
+                        }
+                    }
+                    
+                }
+
+                tbody{
+                    td{
+                        font-size: 12px;
+                        padding: 5px 0px;
+                        
+                        
+                    }
+                    .m-btn{
+                        display: flex;
+                        justify-content: space-around;
+                        
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+.modal{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.detalle-usuario {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90%;
+    overflow-y: auto;
+
+    h2{
+        text-align: center;
+    }
+
+    form{
+        width: 100%;
+        .m-f1{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0px;
+            
+            .eu-nombre{
+                width: 20%;
+                input{
+                    width: 100%;
+                }
+            }
+            .eu-a_paterno{
+                width: 20%;
+                input{
+                    width: 100%;
+                }
+            }
+            .eu-a_materno{
+                width: 20%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-dni{
+                width: 20%;
+                input{
+                    width: 100%;
+                }
+            }
+        }
+        .m-f2{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0px;
+
+            .eu-dni_img{
+                width: 55%;
+                .dni_img_box{
+                    width: 100%;
+                    display: flex;
+                    justify-content: space-around;
+                    border: solid 1px #0ba7a7;
+                    border-radius: 10px;
+                    padding: 5px 0px;
+
+                    .dni_img_subbox{
+                        display: flex;
+                        flex-wrap: wrap;
+                        width: 38%;
+                        input{
+                            width: 100%;
+                            margin: auto 0px;
+                        }
+                        small{
+                            width: 100%;
+                            text-align: center;
+                        }
+                    }
+
+                    .image-preview-container{
+                        text-align: center;
+                        .image-preview{
+                            max-width: 200px;
+                            max-height: 150px;
+                            margin-bottom: 10px;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                        }
+                        button{
+                            background: #ff4444;
+                            color: white;
+                            border: none;
+                            padding: 5px 10px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            margin-bottom: 10px;
+                            
+                        }
+                    }
+
+                }
+
+            }
+
+            .eu-f_nacimiento{
+                width: 16%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-edad{
+                width: 8%;
+                input{
+                    width: 100%;
+                }
+            }
+        }
+
+        .m-f3{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0px;
+
+            .eu-f_ingreso{
+                width: 20%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-email{
+                width: 35%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-pais{
+                width: 30%;
+                select{
+                    width: 100%;
+                }
+            }
+        }
+
+        .m-f4{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0px;
+
+            .eu-region{
+                width: 30%;
+                select{
+                    width: 100%;
+                }
+            }
+            .eu-provincia{
+                width: 30%;
+                select{
+                    width: 100%;
+                }
+            }
+            .eu-distrito{
+                width: 30%;
+                select{
+                    width: 100%;
+                }
+            }
+        }
+
+        .m-f5{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0px;
+
+            .eu-direccion{
+                width: 40%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-celular{
+                width: 20%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-nro_emergencia{
+                width: 20%;
+                input{
+                    width: 100%;
+                }
+            }
+        }
+
+
+        .m-f6{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0px;
+
+            .eu-sexo{
+                width: 16%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-e_civil{
+                width: 16%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-tipo_usuario{
+                width: 16%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-t_polo{
+                width: 11%;
+                input{
+                    width: 100%;
+                }
+            }
+            .eu-t_pantalon{
+                width: 11%;
+                input{
+                    width: 100%;
+                }
+            }
+            .eu-t_zapato{
+                width: 11%;
+                input{
+                    width: 100%;
+                }
+            } 
+        }
+
+        .m-f7{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 20px 0px;
+
+            .eu-cuenta_corriente{
+                width: 30%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-cci{
+                width: 30%;
+                input{
+                    width: 100%;
+                }
+            }
+
+            .eu-estado{
+                width: 15%;
+                input{
+                    width: 100%;
+                }
+            }
+        }
+
+        .eu-btn{
+            display: flex;
+            margin: 30px 0px 10px 0px;
+            justify-content: center;
+
+            button{
+                margin: 0px 20px 0px 20px;
+            }
+        }
+    }
+}
+

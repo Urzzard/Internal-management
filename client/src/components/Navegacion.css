@@ -1,0 +1,115 @@
+.navegacion{
+    display: flex;
+    background: #fefeff;
+    width: 100%;
+    box-shadow: #4b4b4b 3px 3px 3px;
+    padding: 5px 0px 5px 0px;
+    .logo{
+        img{
+            width: 120px;
+            
+        }
+        margin-right: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .menu-nav{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        
+        ul{
+            display: flex;
+            justify-content: start;
+            padding: 0px;
+            list-style: none;
+            width: 100%;
+            li{
+                margin-right: 40px;
+                a{
+                    color: #0ba7a7;
+                    font-size: 20px;
+                    text-decoration: none;
+                    font-weight: bold;
+                    transition: all ease 0.3s;
+                }
+
+                a:hover{
+                    text-shadow: #4b4b4b 1px 1px 1px;
+                    font-size: 22px;
+                }
+            }
+        }
+    }
+
+    .i-perfil{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 20px;
+        
+
+        .i-usuario{
+            .nav-perfil{
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                transition: all ease 0.5s;
+            }
+            .nav-perfil:hover{
+                border-radius: 100%;
+                box-shadow: #4b4b4b 3px 3px 3px;
+                cursor: pointer;
+            }
+
+            ul{
+                display: none;
+                position: absolute;
+                right: 0px;
+                padding: 0px;
+                
+                li{
+                    list-style: none;
+                    height: 30px;
+                    display: flex;
+                    align-items: center;
+                    a{
+                        text-decoration: none;
+                        color: #0ba7a7;
+                        padding: 0px 20px 0px 20px;
+                    }
+                }
+                .nav-user{
+                    background: #fefeff;
+                    transition: all ease 0.2s;
+                    
+                }
+
+                .nav-user:hover{
+                    background: #e7e7e7;
+                    transition: all ease 0.2s;
+                    
+                }
+
+                .logout{
+                    background: #fefeff;
+                }
+
+                .logout:hover{
+                    background: #e7e7e7;
+                    
+                }
+            }
+        }
+    }
+
+    .i-perfil:hover{
+        ul{
+            display: block;
+            visibility: visible;
+        }
+    }
+}
