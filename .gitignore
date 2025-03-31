@@ -1,6 +1,9 @@
 # Entorno virtual
 venv/
 
+#carpeta de medios
+media/dni/
+
 # Python
 __pycache__/
 *.pyc

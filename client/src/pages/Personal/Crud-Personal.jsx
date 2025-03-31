@@ -94,6 +94,7 @@ export function CrudPersonal(){
     } = useForm()
 
     const [imagenDni, setImagenDni] = useState(null);
+    const [previewImg, setPreviewImg] = useState(null);
     const navigate = useNavigate()
 
     const onSubmit = handleSubmit(async (data) => {
@@ -114,6 +115,8 @@ export function CrudPersonal(){
         try{
             await createU(formData)
             toast.success('Usuario Creado')
+            setImagenDni(null);
+            setPreviewImg(null);
             setTimeout(() =>{
                 navigate(0)
             }, 800)
@@ -127,8 +130,22 @@ export function CrudPersonal(){
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
+
+        if(file){
+            setImagenDni(file);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setPreviewImg(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
         setImagenDni(file);
     }
+
+    const removeImg = () =>{
+        setImagenDni(null);
+        setPreviewImg(null);
+    };
 
 
     //PARA CARGAR LOS DATOS DE LA API
@@ -269,20 +286,27 @@ export function CrudPersonal(){
                             </div>
                         </div>
                         <div className="f2">
-                           {/*  <div className="rp-img_dni">
-                                <label htmlFor="img_dni">Imagen de DNI:</label>
-                                <label htmlFor="img_dni" class="custom-file-button">Seleccionar archivo</label>
-                                <input type="file" name="img_dni" className="custom-file-input" id="img_dni"
-                                    {...register("img_dni", {required: true})}
-                                />
-                                <span id="fileName"></span>
-                                {errors.img_dni && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div> */}
-
                             <div className="rp-dni_img">
                                 <label htmlFor="dni_img">Imagen de DNI:</label>
-                                <input type="file" name="dni_img" className="form-control" id="dni_img" onChange={handleFileChange}/>
-                                {errors.dni_img && <span className="validacion1" >Este campo es requerido!!</span>}
+                                <div className="dni_img_box">
+                                    <div className="dni_img_subbox">
+                                        <input type="file" name="dni_img" id="dni_img" onChange={handleFileChange}/>
+                                        {errors.dni_img && <span className="validacion1" >Este campo es requerido!!</span>}
+                                        <small className="form-text text-muted">
+                                            {imagenDni ? `Archivo seleccionado: ${imagenDni.name}` : `No existe imagen seleccionada`}
+                                        </small>
+                                    </div>
+                                    
+                                    {previewImg && (
+                                        <div className="img_prev_box">
+                                            <img src={previewImg} alt="vista previa" className="img-preview" />
+                                            <button type="button" className="rmv_img_btn" onClick={removeImg}>
+                                                Eliminar imagen
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                
                             </div>
 
                             <div className="rp-f_nacimiento">
@@ -589,6 +613,75 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
         loguear: u.loguear
     })
 
+    const handlePaisChange = async (e) =>{
+        const paisId = e.target.value;
+        setFormValues({
+            ...formValues,
+            pais: paisId,
+            region: '',
+            provincia: '',
+            distrito: ''
+        })
+
+        if(paisId){
+            try {
+                const data = await getRegiones(paisId);
+                setERegion(data);
+                setEProvincia([]);
+                setEDistrito([]);
+            }catch(error){
+                console.error("Error cargando regiones:", error);
+            }
+        } else{
+            setERegion([]);
+            setEProvincia([]);
+            setEDistrito([]);
+        }
+    }
+
+    const handleRegionChange = async (e) =>{
+        const regionId = e.target.value;
+        setFormValues({
+            ...formValues,
+            region: regionId,
+            provincia: '',
+            distrito: ''
+        })
+
+        if(regionId){
+            try {
+                const data = await getProvincias(regionId);
+                setEProvincia(data);
+                setEDistrito([]);
+            }catch(error){
+                console.error("Error cargando provincias:", error);
+            }
+        } else{
+            setEProvincia([]);
+            setEDistrito([]);
+        }
+    }
+
+    const handleProvinciaChange = async (e) =>{
+        const provinciaId = e.target.value;
+        setFormValues({
+            ...formValues,
+            provincia: provinciaId,
+            distrito: ''
+        })
+
+        if(provinciaId){
+            try {
+                const data = await getDistritos(provinciaId);
+                setEDistrito(data);
+            }catch(error){
+                console.error("Error cargando distritos:", error);
+            }
+        } else{
+            setEDistrito([]);
+        }
+    }
+
     const [previewImg, setPreviewImg] = useState(null);
 
     useEffect(() => {
@@ -600,7 +693,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
     }, [u.dni_img])
 
     const handleInputChange = (e) => {
-        const {name, value, files} = e.target;
+        const {name, value, files, type, checked} = e.target;
 
         if(name === 'dni_img' && files && files[0]){
             const reader = new FileReader();
@@ -620,6 +713,26 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
             })
         }
     }
+
+    useEffect(() => {
+        const loadInitialData = async () => {
+            if(u.pais){
+                const regiones = await getRegiones(u.pais);
+                setERegion(regiones);
+
+                if(u.region){
+                    const provincias = await getProvincias(u.region);
+                    setEProvincia(provincias);
+
+                    if(u.provincia){
+                        const distritos = await getDistritos(u.provincia);
+                        setEDistrito(distritos);
+                    }
+                }
+            }
+        };
+        loadInitialData();
+    }, [u.pais, u.region, u.provincia])
 
     useEffect(() => {
         if(u.pais){
@@ -770,7 +883,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                         </div>
                         <div className="eu-pais">
                             <label htmlFor="pais">Pais:</label><br/>
-                            <select name="pais" id="pais" className="form-control" value={formValues.pais} onChange={handleInputChange}>
+                            <select name="pais" id="pais" className="form-control" value={formValues.pais} onChange={handlePaisChange}>
                                 {pais.map((p) =>(
                                     <option key={p.geonameId} value={p.geonameId}>
                                     {p.countryName}
@@ -783,7 +896,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                     <div className="m-f4">
                         <div className="eu-region">
                             <label htmlFor="region">Region:</label><br/>
-                            <select name="region" id="region" className="form-control" value={formValues.region} onChange={handleInputChange}>
+                            <select name="region" id="region" className="form-control" value={formValues.region} onChange={handleRegionChange} disabled={!region.length}>
                                 {region.map((r) =>(
                                     <option key={r.geonameId} value={r.geonameId}>
                                         {r.toponymName}
@@ -793,7 +906,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                         </div>
                         <div className="eu-provincia">
                             <label htmlFor="provincia">Provincia:</label><br/>
-                            <select name="provincia" id="provincia" className="form-control" value={formValues.provincia} onChange={handleInputChange}>
+                            <select name="provincia" id="provincia" className="form-control" value={formValues.provincia} onChange={handleProvinciaChange} disabled={!provincia.length}>
                                 {provincia.map((prov) =>(
                                     <option key={prov.geonameId} value={prov.geonameId}>
                                     {prov.toponymName}
@@ -803,7 +916,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                         </div>
                         <div className="eu-distrito">
                             <label htmlFor="distrito">Distrito:</label><br/>
-                            <select name="distrito" id="distrito" className="form-control" value={formValues.distrito} onChange={handleInputChange}>
+                            <select name="distrito" id="distrito" className="form-control" value={formValues.distrito} onChange={handleInputChange} disabled={!distrito.length}>
                                 {distrito.map((dist) =>(
                                     <option key={dist.geonameId} value={dist.geonameId}>
                                     {dist.toponymName}
