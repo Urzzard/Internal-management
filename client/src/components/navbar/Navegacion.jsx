@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from "react"
-import logo2 from '../assets/VIA-VERDE-LOGO.jpeg'
-import perfil from '../assets/icons/perfil-90.png'
+import logo2 from '../../assets/VIA-VERDE-LOGO.jpeg'
+import perfil from '../../assets/icons/perfil-90.png'
 import './Navegacion.css'
 
 export function Navegacion(){

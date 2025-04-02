@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useForm } from 'react-hook-form'
-import { getAllM, createM, deleteM, updateM, importM } from "../../api/api-inventario/crud-material.api"
-import { getAllMCats } from "../../api/api-inventario/crud-categoria.api"
+import { getAllM, createM, deleteM, updateM, importM } from "../api/crud-material.api"
+import { getAllMCats } from "../api/crud-categoria.api"
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { BaseLayout } from "../../../components/layout/BaseLayout";
 
 export function CrudMaterial(){
     //PARA CARGAR LOS DATOS DE LA API
@@ -134,19 +135,12 @@ export function CrudMaterial(){
 
     return(
         <div className={`inventario ${selected ? "modal-open": ""}`}>
-            <div className="navegador">
-                <a href="/inventario">
-                    <h3>INVENTARIO</h3>
-                </a>
-                <div className="slash">
-                    <h3>\</h3>
-                </div>
-                <a href="/crud-material">
-                    <h3>CRUD - MATERIALES</h3>
-                </a>
-                
-            </div>
-            <div className="c-principal">
+            <BaseLayout breadcrumbs={[
+                {label: 'INICIO', path: '/inicio'},
+                {label: 'INVENTARIO', path: '/inventario'},
+                {label: 'CRUD MATERIALES', path: '/crud-materiales'},
+            ]}>
+            
                 <div className="crear">
                     <h2 onClick={slide} style={{cursor:'pointer'}}>REGISTRAR NUEVO MATERIAL</h2>
                 {(visible &&
@@ -261,7 +255,7 @@ export function CrudMaterial(){
                     </table>
                     
                 </div>
-            </div>
+            </BaseLayout>
             {selected &&(
                 <EditarMat mat={selected} onClose={() =>setSelected(null)} categorias={cat} />
             )}

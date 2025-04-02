@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useForm } from 'react-hook-form'
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { getAllU, createU, deleteU, updateU } from "../../api/api-personal/crud-usuarios.api";
-import { getDistritos, getPaises, getProvincias, getRegiones } from "../../api/info-geografica.api";
+import { getAllU, createU, deleteU, updateU } from "../api/crud-usuarios.api";
+import { getDistritos, getPaises, getProvincias, getRegiones } from "../../../api/info-geografica.api";
+import { BaseLayout } from "../../../components/layout/BaseLayout";
 
 
 export function CrudPersonal(){
@@ -238,9 +239,9 @@ export function CrudPersonal(){
 
      return(
         <div className={`personal ${selected ? "modal-open": ""}`}>
-            <div className="navegador">
+            {/* <div className="navegador">
                 <a href="/personal">
-                    <h3>INVENTARIO</h3>
+                    <h3>PERSONAL</h3>
                 </a>
                 <div className="slash">
                     <h3>\</h3>
@@ -250,7 +251,13 @@ export function CrudPersonal(){
                 </a>
                 
             </div>
-            <div className="c-principal">
+            <div className="c-principal"> */}
+
+                <BaseLayout breadcrumbs={[
+                    {label: 'INICIO', path: '/inicio'},
+                    {label: 'PERSONAL', path: '/personal'},
+                    {label: 'CRUD PERSONAL', path: '/crud-personal'}
+                ]}>
                 <div className="crear">
                     <h2 onClick={slide} style={{cursor:'pointer'}}>REGISTRAR NUEVO PERSONAL</h2>
                 {(visible &&
@@ -482,19 +489,6 @@ export function CrudPersonal(){
                                 />
                                 {errors.f_ingreso && <span className="validacion1" >Este campo es requerido!!</span>}
                             </div>
-                            
-                        </div>
-
-                        <div className="f6">
-                            <div className="rp-tipo_usuario">
-                                <label htmlFor="tipo_usuario">Tipo de Usuario:</label>
-                                <select name="tipo_usuario" id="tipo_usuario" className="form-control"
-                                    {...register("tipo_usuario", {required: true})}>
-                                    <option value="Staff">Staff</option>
-                                    <option value="PCampo">PCampo</option>
-                                </select>
-                                {errors.tipo_usuario && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
                             <div className="rp-estado">
                                 <label htmlFor="estado">Estado Usuario:</label>
                                 <select name="estado" id="estado" className="form-control"
@@ -505,10 +499,11 @@ export function CrudPersonal(){
                                 </select>
                                 {errors.estado && <span className="validacion1" >Este campo es requerido!!</span>}
                             </div>
-                            <div className="rp-loguear">
-                                <label htmlFor="loguear">Puede loguear?</label>
-                                <input type="checkbox" name="loguear" className="form-control" id="loguear"/>
-                            </div>
+                            
+                        </div>
+
+                        <div className="f6">
+                            
                         </div>
 
                         
@@ -568,7 +563,8 @@ export function CrudPersonal(){
                     </table>
                     
                 </div>
-            </div>
+                </BaseLayout>
+            {/* </div> */}
             {selected &&(
                 <EditarUsuario u={selected} onClose={() =>setSelected(null)} pais={pais} region={region} provincia={provincia} distrito={distrito} />
             )}
@@ -600,7 +596,6 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
         distrito: u.distrito,
         cuenta_corriente: u.cuenta_corriente,
         cci: u.cci,
-        tipo_usuario: u.tipo_usuario,
         t_zapato: u.t_zapato,
         t_polo: u.t_polo,
         t_pantalon: u.t_pantalon,
@@ -609,8 +604,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
         direccion: u.direccion,
         e_civil: u.e_civil,
         sexo: u.sexo,
-        estado: u.estado,
-        loguear: u.loguear
+        estado: u.estado
     })
 
     const handlePaisChange = async (e) =>{
@@ -956,13 +950,6 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                                 <option value="Casad@">Casad@</option>
                                 <option value="Divorciad@">Divorciad@</option>
                                 <option value="Viud@">Viud@</option>
-                            </select>
-                        </div>
-                        <div className="eu-tipo_usuario">
-                            <label htmlFor="tipo_usuario">Tipo de Usuario:</label><br/>
-                            <select name="tipo_usuario" id="tipo_usuario" className="form-control" value={formValues.tipo_usuario} onChange={handleInputChange}>
-                                <option value="Staff">Staff</option>
-                                <option value="PCampo">PCampo</option>
                             </select>
                         </div>
                         <div className="eu-t_polo">

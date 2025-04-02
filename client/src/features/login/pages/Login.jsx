@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from "react"
 import { toast } from "react-hot-toast";
-import logo from '../assets/LOGO.png'
+import logo from '../../../assets/LOGO.png'
 import axios from 'axios'
 import './Login.css'
 

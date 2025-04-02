@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Usuarios, Staff, PCampo, Rango, Pcasa, Psubcontrato, Subcontrato, Psindicato, Sindicato
+from .models import Usuarios, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio 
 
 class UsuariosSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,14 +24,19 @@ class StaffSerializer(serializers.ModelSerializer):
         model = Staff
         fields = '__all__'
 
-class PCampoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PCampo
-        fields = '__all__'
-
 class RangoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rango
+        fields = '__all__'
+
+class GremioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Gremio
+        fields = '__all__'
+
+class PCampoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PCampo
         fields = '__all__'
 
 class PcasaSerializer(serializers.ModelSerializer):
@@ -44,17 +49,7 @@ class PsubcontratoSerializer(serializers.ModelSerializer):
         model = Psubcontrato
         fields = '__all__'
 
-class SubcontratoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Subcontrato
-        fields = '__all__'
-
 class PsindicatoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Psindicato
-        fields = '__all__'
-
-class SindicatoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Sindicato
         fields = '__all__'

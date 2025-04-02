@@ -1,0 +1,40 @@
+.baseContainer{
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    .breadcrumbs{
+        margin: 10px 0px 0px 0px;
+            width: 80%;
+            display: flex;
+            .bclink{
+                margin-right: 10px;
+                color: #0ba7a7;
+                .bclinktext{
+                    font-size: 30px;
+                    margin: 10px 0px;
+                }
+            }
+            .bclink:hover{
+                text-shadow: #4b4b4b 2px 2px 2px;
+            }
+            .bcseparator{
+                margin-right: 10px;
+                color: #0ba7a7;
+                .slash{
+                    font-size: 30px;
+                    margin: 10px 0px;
+                }
+                
+            }
+    }
+    .cprincipal{
+        margin: 50px 0px;
+        width: 80%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+}
+

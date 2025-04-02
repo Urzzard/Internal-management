@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useForm } from 'react-hook-form'
-import { getAllMCats, createMCats, deleteMCats, updateMCats } from "../../api/api-inventario/crud-categoria.api"
+import { getAllMCats, createMCats, deleteMCats, updateMCats } from "../api/crud-categoria.api"
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { BaseLayout } from "../../../components/layout/BaseLayout";
 
 export function CrudCategoria(){
     //PARA CARGAR LOS DATOS DE LA API
@@ -54,19 +55,11 @@ export function CrudCategoria(){
 
     return(
         <div className={`inventario ${selected ? "modal-open": ""}`}>
-            <div className="navegador">
-                <a href="/inventario">
-                    <h3>INVENTARIO</h3>
-                </a>
-                <div className="slash">
-                    <h3>\</h3>
-                </div>
-                <a href="/crud-categoria">
-                    <h3>CRUD - CATEGORIA DE MATERIALES</h3>
-                </a>
-                
-            </div>
-            <div className="c-principal">
+            <BaseLayout breadcrumbs={[
+                {label: 'INICIO', path: '/inicio'},
+                {label: 'INVENTARIO', path: '/inventario'},
+                {label: 'CRUD CATEGORIA DE MATERIALES', path: '/crud-categoria'},
+            ]}>
                 <div className="crear">
                     <h2 onClick={slide} style={{cursor:'pointer'}}>REGISTRAR NUEVA CATEGORIA DE MATERIAL</h2>
                     {(visible &&
@@ -128,7 +121,7 @@ export function CrudCategoria(){
                     </table>
                     
                 </div>
-            </div>
+            </BaseLayout>
             {selected &&(
                 <EditarCat cat={selected} onClose={() =>setSelected(null)} />
             )}

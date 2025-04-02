@@ -2,8 +2,8 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import viewsets, status
 from django.shortcuts import render
-from .serializer import UsuariosSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, PcasaSerializer, PsubcontratoSerializer, SubcontratoSerializer, PsindicatoSerializer, SindicatoSerializer
-from .models import Usuarios, Staff, PCampo, Rango, Pcasa, Psubcontrato, Subcontrato, Psindicato, Sindicato
+from .serializer import UsuariosSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, PcasaSerializer, PsubcontratoSerializer, PsindicatoSerializer, GremioSerializer
+from .models import Usuarios, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio
 
 # Create your views here.
 
@@ -41,13 +41,17 @@ class StaffView(viewsets.ModelViewSet):
     serializer_class = StaffSerializer
     queryset = Staff.objects.all()
 
-class PCampoView(viewsets.ModelViewSet):
-    serializer_class = PCampoSerializer
-    queryset = PCampo.objects.all()
-
 class RangoView(viewsets.ModelViewSet):
     serializer_class = RangoSerializer
     queryset = Rango.objects.all()
+
+class GremioView(viewsets.ModelViewSet):
+    serializer_class = GremioSerializer
+    queryset = Gremio.objects.all()
+
+class PCampoView(viewsets.ModelViewSet):
+    serializer_class = PCampoSerializer
+    queryset = PCampo.objects.all()
 
 class PcasaView(viewsets.ModelViewSet):
     serializer_class = PcasaSerializer
@@ -57,15 +61,8 @@ class PsubcontratoView(viewsets.ModelViewSet):
     serializer_class = PsubcontratoSerializer
     queryset = Psubcontrato.objects.all()
 
-class SubcontratoView(viewsets.ModelViewSet):
-    serializer_class = SubcontratoSerializer
-    queryset = Subcontrato.objects.all()
-
 class PsindicatoView(viewsets.ModelViewSet):
     serializer_class = PsindicatoSerializer
     queryset = Psindicato.objects.all()
 
-class SindicatoView(viewsets.ModelViewSet):
-    serializer_class = SindicatoSerializer
-    queryset = Sindicato.objects.all()
 
