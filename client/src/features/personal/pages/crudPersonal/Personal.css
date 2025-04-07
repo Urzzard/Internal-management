@@ -126,7 +126,9 @@
                     .img_prev_box{
                         padding: 5px;
                         text-align: center;
+                        width: 58%;
                         img{
+                            width: 100%;
                             max-width: 200px;
                             max-height: 150px;
                             margin-bottom: 10px;

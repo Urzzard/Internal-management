@@ -9,8 +9,11 @@ import { CrudMaterial } from "./features/inventario/pages/Crud-Materiales";
 import { CrudRegistroMat } from "./features/inventario/pages/Crud-Registro-Mat";
 import { Toaster } from "react-hot-toast"
 import { Personal } from "./features/personal/pages/Personal";
-import { CrudPersonal } from "./features/personal/pages/Crud-Personal";
-import { AdminPersonal } from "./features/personal/pages/Admin-Personal";
+import { CrudPersonal } from "./features/personal/pages/crudPersonal/Crud-Personal";
+import { AdminPersonal } from "./features/personal/pages/adminPersonal/Admin-Personal";
+import { CrudGremio } from "./features/personal/pages/adminPersonal/gremio/CrudGremio";
+import { CrudRango } from "./features/personal/pages/adminPersonal/rango/CrudRango";
+import { CrudStaff } from "./features/personal/pages/adminPersonal/staff/CrudStaff";
 
 function App(){
   return(
@@ -22,7 +25,7 @@ function App(){
 
 function Content(){
   const location = useLocation();
-  const showNav = ["/inicio", "/inventario", "/crud-categoria", "/crud-material", "/crud-registro-mat", "/personal", "/crud-personal", "/admin-personal"].includes(location.pathname);
+  const showNav = ["/inicio", "/inventario", "/crud-categoria", "/crud-material", "/crud-registro-mat", "/personal", "/crud-personal", "/admin-personal", "/crud-gremio", "/crud-rango", "/crud-staff"].includes(location.pathname);
 
   return(
       <>
@@ -40,6 +43,9 @@ function Content(){
               <Route path="/personal" element={<Personal/>}/>
               <Route path="/crud-personal" element={<CrudPersonal/>}/>
               <Route path="/admin-personal" element={<AdminPersonal/>}/>
+              <Route path="/crud-gremio" element={<CrudGremio/>}/>
+              <Route path="/crud-rango" element={<CrudRango/>}/>
+              <Route path="/crud-staff" element={<CrudStaff/>}/>
           </Routes>
        </div>
         <Footer/>

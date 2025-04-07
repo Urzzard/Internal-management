@@ -1,0 +1,62 @@
+.adminbox{
+    width: 25%;
+    margin-right: 5px;
+    .adminlink{
+        margin: 5px;
+        
+        h2{
+            
+            border: solid 2px #4b4b4b;
+            border-radius: 10px;
+            box-shadow: #4b4b4b 2px 2px 2px;
+            font-size: 20px;
+            padding: 5px 10px;
+            text-align: center;
+            color: #f0f9ee;
+            background: #0ba7a7;
+        }
+        h2:hover{
+            background: #0b7a7a;
+        }
+        
+    }
+}
+
+.adminlist{
+    width: 73%;
+    border-left: 1px solid #a5a5a5;
+    padding-left: 10px;
+    .adminlistsubtittle{
+        text-align: center;
+        text-decoration: underline;
+        margin-bottom: 40px;
+        
+    }
+
+    .personallist{
+        padding-bottom: 50px;
+        border-bottom: 1px solid #a5a5a5;
+        h3{
+            margin-top: 25px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        table{
+            width: 100%;
+            text-align: center;
+    
+            thead{
+                tr{
+                    th{
+                        border-bottom: solid 2px;
+                        font-weight: bold;
+                        font-size: 15px;
+                    }
+                }
+            }
+        }
+    }
+    
+}

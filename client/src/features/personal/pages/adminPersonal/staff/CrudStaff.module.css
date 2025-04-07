@@ -1,0 +1,74 @@
+.staffregister{
+    width: 25%;
+
+    h3{
+        text-align: center;
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 30px;
+        text-decoration: underline;
+    }
+
+    form{
+        .formgroup{
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+            margin-bottom: 20px;
+            label{
+                font-size: 18px;
+            }
+            select{
+                width: 100%;
+                font-size: 16px;
+                padding: 5px 5px;
+                border: solid 1px #248c84;
+                border-radius: 5px;
+            }
+            input{
+                width: 100%;
+                font-size: 16px;
+                padding: 5px 5px;
+                border: solid 1px #248c84;
+                border-radius: 5px;
+            }
+
+            .btnguardar{
+                box-shadow: #144d48 2px 2px 2px;
+            }
+
+            .btnguardar:hover{
+                background: #217c75;
+            }
+        }
+    }
+}
+
+.stafflist{
+    width: 70%;
+    border-left: 1px solid #a5a5a5;
+    padding-left: 10px;
+
+    .stafflisttitle{
+        text-align: center;
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 30px;
+        text-decoration: underline;
+    }
+
+    table{
+        width: 100%;
+        text-align: center;
+
+        thead{
+            tr{
+                th{
+                    border-bottom: solid 2px;
+                    font-weight: bold;
+                    font-size: 15px;
+                }
+            }
+        }
+    }
+}

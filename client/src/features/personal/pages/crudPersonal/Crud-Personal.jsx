@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useForm } from 'react-hook-form'
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { getAllU, createU, deleteU, updateU } from "../api/crud-usuarios.api";
-import { getDistritos, getPaises, getProvincias, getRegiones } from "../../../api/info-geografica.api";
-import { BaseLayout } from "../../../components/layout/BaseLayout";
-
+import { getAllU, createU, deleteU, updateU } from "../../api/crud-usuarios.api";
+import { getDistritos, getPaises, getProvincias, getRegiones } from "../../../../api/info-geografica.api";
+import { BaseLayout } from "../../../../components/layout/BaseLayout";
+import './Personal.css'
 
 export function CrudPersonal(){
 

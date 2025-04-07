@@ -2,7 +2,7 @@ import addpersonal from '../../../assets/personal/agregar-usuario.png'
 import apersonal from '../../../assets/personal/padmin2.png'
 import { BaseLayout } from '../../../components/layout/BaseLayout'
 import { BoxMenu } from '../../../components/boxmenu/BoxMenu'
-import './Personal.css'
+
 
 export function Personal(){
 
