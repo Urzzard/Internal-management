@@ -120,7 +120,7 @@ export function CrudPersonal(){
             setPreviewImg(null);
             setTimeout(() =>{
                 navigate(0)
-            }, 800)
+            }, 700)
         } catch (error){
             toast.error('Error al crear usuario!!');
             console.log(error);

@@ -1,26 +1,12 @@
-import React, {useState, useEffect} from "react"
 import logo2 from '../../assets/VIA-VERDE-LOGO.jpeg'
 import perfil from '../../assets/icons/perfil-90.png'
+import { useAuth } from "../../context/AuthContext"
 import './Navegacion.css'
 
 export function Navegacion(){
 
-    const [username, setUser] = useState('')
+    const {user, logout} = useAuth();
 
-    useEffect(() => {
-        const su = localStorage.getItem('username');
-
-        if(su){
-            setUser(su)
-        }
-    }, []);
-
-    const handleLogout = () => {
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('username')
-        window.location.href = '/login';
-    }
 
     return(
         <div className="navegacion">
@@ -47,10 +33,13 @@ export function Navegacion(){
                         <img width="50" height="50" src={perfil} alt="test-account"/>
                     </div>
                     <div id="submenu">
-                        <ul>
-                            <li className="nav-user"><a href="#">{username}</a></li>
-                            <li className="logout"><a href="#" onClick={handleLogout}>Logout</a></li>
-                        </ul>
+                        {user && (
+                            <ul>
+                                <li className="nav-user"><a href="#">{user.username}</a></li>
+                                <li className="logout"><a href="#" onClick={logout}>Logout</a></li>
+                            </ul>
+                        )}
+                        
                     </div>
                 </div>
             </div>

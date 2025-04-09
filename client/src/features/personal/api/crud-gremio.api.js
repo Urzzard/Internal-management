@@ -1,10 +1,8 @@
-import axios from 'axios'
+import api from "../../../api/axios";
 
-const gremiApi = axios.create({
-    baseURL: "http://localhost:8000/personal/api-personal/Gremio/",
-});
+const url = "/personal/api-personal/Gremio/"; 
 
-export const getAllGremio = () => gremiApi.get("/");
-export const createGremio = (gremio) => gremiApi.post("/", gremio);
-export const deleteGremio = (id) => gremiApi.delete(`${id}/`);
-export const updateGremio = (id, gremio) => gremiApi.put(`${id}/`, gremio);
+export const getAllGremio = () => api.get(url);
+export const createGremio = (gremio) => api.post(url, gremio);
+export const deleteGremio = (id) => api.delete(`${url}${id}/`);
+export const updateGremio = (id, gremio) => api.put(`${url}${id}/`, gremio);

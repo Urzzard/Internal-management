@@ -15,5 +15,5 @@ router.register(r'Psindicato', views.PsindicatoView, 'psindicato')
 
 urlpatterns = [
     path("api-personal/", include(router.urls)),
-    path('docs/', include_docs_urls(title="Api Personal"))
+    path('personal-docs/', include_docs_urls(title="Api Personal"))
 ]

@@ -40,11 +40,13 @@ class Usuarios(models.Model):
     )
 
 class Staff(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     usuario = models.OneToOneField(Usuarios, on_delete=models.CASCADE, related_name='staff_info')
     cargo = models.CharField(max_length=200)
-    uname = models.CharField(max_length=100, unique=True)
-    password = models.CharField(max_length=100)
     rm = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.cargo}"
 
 class Rango(models.Model):
     nombre = models.CharField(max_length=50, unique=True)

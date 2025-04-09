@@ -1,10 +1,8 @@
-import axios from 'axios'
+import api from "../../../api/axios";
 
-const pcasaApi = axios.create({
-    baseURL: "http://localhost:8000/personal/api-personal/Pcasa/",
-});
+const url = "/personal/api-personal/Pcasa/"; 
 
-export const getAllpcasa = () => pcasaApi.get("/");
-export const createpcasa = (pcasa) => pcasaApi.post("/", pcasa);
-export const deletepcasa = (id) => pcasaApi.delete(`${id}/`);
-export const updatepcasa = (id, pcasa) => pcasaApi.put(`${id}/`, pcasa);
+export const getAllpcasa = () => api.get(url);
+export const createpcasa = (pcasa) => api.post(url, pcasa);
+export const deletepcasa = (id) => api.delete(`${url}${id}/`);
+export const updatepcasa = (id, pcasa) => api.put(`${url}${id}/`, pcasa);

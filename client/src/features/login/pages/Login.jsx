@@ -3,17 +3,29 @@ import { toast } from "react-hot-toast";
 import logo from '../../../assets/LOGO.png'
 import axios from 'axios'
 import './Login.css'
+import { useAuth } from "../../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
 
 export function Login(){
 
-    const [username, setUser] = useState('');
-    const [password, setPass] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const {login} = useAuth();
+    const navigate = useNavigate();
 
-    const handleLogin = async (e) =>{
+    const handleSubmit = async (e) =>{
         e.preventDefault();
+        setError('');
+        
+        const success = await login(username, password);
+        if(!success){
+            setError('Credenciales incorrectas')
+        }
 
-        try {
+
+        /* try {
             const res = await axios.post('http://localhost:8000/api/token/', {
                 username: username,
                 password: password
@@ -38,7 +50,7 @@ export function Login(){
                 window.location;
             }, 700)
             setError('Usuario o Contraseña incorrectos')
-        }
+        } */
     }
 
     return(
@@ -50,7 +62,7 @@ export function Login(){
                     <h3>LOGIN</h3>
                 </div>
     
-                <form onSubmit={handleLogin}>
+                <form onSubmit={handleSubmit}>
                     <div className="form-log">
                         <div className="f-label">
                             <label htmlFor="username" className="l-u">Nombre de Usuario: </label>
@@ -58,8 +70,8 @@ export function Login(){
                         </div>
         
                         <div className="f-input">
-                            <input type="text" name="user" id="username" className="i-u" value={username} onChange={(e) => setUser(e.target.value)}/>
-                            <input type="password" name="pass" id="password" className="i-p" value={password} onChange={(e) => setPass(e.target.value)}/>
+                            <input type="text" name="username" id="username" className="i-u" value={username} onChange={(e) => setUsername(e.target.value)} required/>
+                            <input type="password" name="password" id="password" className="i-p" value={password} onChange={(e) => setPassword(e.target.value)} required/>
                         </div>
                     </div>
 

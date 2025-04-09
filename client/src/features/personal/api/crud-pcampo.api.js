@@ -1,10 +1,8 @@
-import axios from 'axios'
+import api from "../../../api/axios";
 
-const pcampoApi = axios.create({
-    baseURL: "http://localhost:8000/personal/api-personal/PCampo/",
-});
+const url = "/personal/api-personal/PCampo/"; 
 
-export const getAllpcampo = () => pcampoApi.get("/");
-export const createpcampo = (pcampo) => pcampoApi.post("/", pcampo);
-export const deletepcampo = (id) => pcampoApi.delete(`${id}/`);
-export const updatepcampo = (id, pcampo) => pcampoApi.put(`${id}/`, pcampo);
+export const getAllpcampo = () => api.get(url);
+export const createpcampo = (pcampo) => api.post(url, pcampo);
+export const deletepcampo = (id) => api.delete(`${url}${id}/`);
+export const updatepcampo = (id, pcampo) => api.put(`${url}${id}/`, pcampo);

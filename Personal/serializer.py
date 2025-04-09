@@ -1,5 +1,24 @@
 from rest_framework import serializers
 from .models import Usuarios, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio 
+from django.contrib.auth.models import User
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'password']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            password=validated_data['password'],
+            is_staff=True
+        )
+        return user
+
 
 class UsuariosSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,11 +37,41 @@ class UsuariosSerializer(serializers.ModelSerializer):
         if obj.dni_img:
             return obj.dni_img.name.split('/')[-1]
         return None
+    
+class PersonalInfoBasicaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuarios
+        fields = ['id', 'nombre', 'a_paterno', 'a_materno', 'dni', 'email']
 
 class StaffSerializer(serializers.ModelSerializer):
+    user = UserSerializer(required=True)
+    usuario = PersonalInfoBasicaSerializer(read_only=True)
+    usuario_id = serializers.PrimaryKeyRelatedField(
+        queryset = Usuarios.objects.all(),
+        source='usuario',
+        write_only=True
+    )
+
     class Meta:
         model = Staff
         fields = '__all__'
+    
+    """ class Meta:
+        model = Staff
+        fields = ['id', 'usuario_id', 'cargo', 'rm', 'user']
+        read_only_fields = ['id'] """
+    
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        usuario = validated_data.pop('usuario')
+        user = User.objects.create_user(
+            username=user_data['username'],
+            password=user_data['password'],
+            is_staff = True
+        )
+        
+        staff = Staff.objects.create(user=user, usuario=usuario, **validated_data)
+        return staff
 
 class RangoSerializer(serializers.ModelSerializer):
     class Meta:

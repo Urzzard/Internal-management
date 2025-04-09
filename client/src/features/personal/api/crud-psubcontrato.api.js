@@ -1,10 +1,8 @@
-import axios from 'axios'
+import api from "../../../api/axios";
 
-const psubcApi = axios.create({
-    baseURL: "http://localhost:8000/personal/api-personal/Psubcontrato/",
-});
+const url = "/personal/api-personal/Psubcontrato/"; 
 
-export const getAllpsubc = () => psubcApi.get("/");
-export const createpsubc = (psubc) => psubcApi.post("/", psubc);
-export const deletepsubc = (id) => psubcApi.delete(`${id}/`);
-export const updatepsubc = (id, psubc) => psubcApi.put(`${id}/`, psubc);
+export const getAllpsubc = () => api.get(url);
+export const createpsubc = (psubc) => api.post(url, psubc);
+export const deletepsubc = (id) => api.delete(`${url}${id}/`);
+export const updatepsubc = (id, psubc) => api.put(`${url}${id}/`, psubc);

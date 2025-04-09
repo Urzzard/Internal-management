@@ -1,17 +1,15 @@
-import axios from 'axios'
+import api from "../../../api/axios";
 
-const uApi = axios.create({
-    baseURL: "http://localhost:8000/personal/api-personal/Usuarios/",
-});
+const url = "/personal/api-personal/Usuarios/"; 
 
-export const getAllU = () => uApi.get("/");
-export const createU = (formData) => uApi.post("/", formData, {
+export const getAllU = () => api.get(url);
+export const createU = (formData) => api.post(url, formData, {
     headers: {
         'Content-Type': 'multipart/form-data'
     }
 });
-export const deleteU = (id) => uApi.delete(`${id}/`);
-export const updateU = (id, formData) => uApi.put(`${id}/`, formData,{
+export const deleteU = (id) => api.delete(`${url}${id}/`);
+export const updateU = (id, formData) => api.put(`${url}${id}/`, formData,{
     headers:{
         'Content-Type': 'multipart/form-data'
     }

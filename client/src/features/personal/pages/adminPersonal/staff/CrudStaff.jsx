@@ -6,13 +6,35 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import {getAllU} from '../../../api/crud-usuarios.api'
 import { getAllStaff, createStaff, updateStaff, deleteStaff } from '../../../api/crud-staff.api';
+import { useAuth } from '../../../../../context/AuthContext';
 
 export function CrudStaff(){
 
+    const {user: currentUser} = useAuth()
     const navigate = useNavigate()
     const [staff, setStaff] = useState([])
+    const [personal, setPersonal] = useState([])
 
     useEffect(() => {
+        async function loadData() {
+            try{
+                const [stafRes, personalRes] = await Promise.all([
+                    getAllStaff(),
+                    getAllU()
+                ]);
+                setStaff(stafRes.data)
+                setPersonal(personalRes.data)
+            }catch(error){
+                console.error("Error al cargar la informacion:", error)
+                if(error.response?.status === 401){
+                    navigate('/login')
+                }
+            }
+        }
+        loadData();
+    }, [navigate]);
+
+    /* useEffect(() => {
         async function loadStaff() {
             const res = await getAllStaff();
             setStaff(res.data);
@@ -20,7 +42,6 @@ export function CrudStaff(){
         loadStaff();
     }, [])
 
-    const [personal, setPersonal] = useState([])
 
     useEffect(() => {
         async function loadPersonal(){
@@ -28,7 +49,7 @@ export function CrudStaff(){
             setPersonal(res.data);
         }
         loadPersonal()
-    }, [])
+    }, []) */
 
     const {
         register,
@@ -39,15 +60,37 @@ export function CrudStaff(){
 
     const onSubmit = handleSubmit(async (data) => {
         try{
+            const staffData = {
+                usuario_id: parseInt(data.usuario_id),
+                cargo: data.cargo,
+                rm: data.rm,
+                user: {
+                    username: data.username,
+                    password: data.password
+                }
+            };
 
-            await createStaff(data)
+            console.log("Datos a enviar", staffData)
+
+            const response = await createStaff(staffData)
+            toast.success("Staff registrado correctamente") 
+
+            const updatedStaff = await getAllStaff();
+            setStaff(updatedStaff.data);
+            reset();
+
+            /* await createStaff(data)
             toast.success("Staff registrado correctamente")
             setTimeout(() => {
                 navigate(0)
-            }, 800)
+            }, 800) */
         }catch(error){
-            toast.error(error.response?.data?.message || "Error al registrar staff")
-            console.log(error)
+            console.error("Error detallado:", error.response?.data);
+            if (error.response?.data?.usuario) {
+                toast.error(error.response.data.usuario[0]);
+            } else {
+                toast.error(error.response?.data?.detail || "Error al registrar staff");
+            }
         }
     })
 
@@ -122,17 +165,17 @@ export function CrudStaff(){
                     <div className={styles.formgroup}>
                         <label htmlFor="cargo">Cargo del Personal</label>
                         <input type="text" name='cargo' id='cargo'
-                        {...register("cargo",{required: true})}/>
+                        {...register("cargo",{required: "El campo es requerido"})}/>
                         {errors.cargo && <span className={styles.validacion}>Este campo es requerido..!</span>}
                     </div>
                     <div className={styles.formgroup}>
                         <label htmlFor="username">Nombre de Usuario</label>
-                        <input type="text" name='username' id='username' {...register("username", { required: "El nombre de usuario es requerido", pattern: { value: /^[a-zA-Z0-9_]+$/, message: "Solo letras, números y guiones bajos"}})}/>
+                        <input type="text" name='username' id='username' {...register("username", { required: "El nombre de usuario es requerido", pattern: { value: /^[a-zA-Z0-9_]+$/, message: "Solo letras, números y _"}})}/>
                         {errors.username && <span className={styles.validacion}>Este campo es requerido..!</span>}
                     </div>
                     <div className={styles.formgroup}>
                         <label htmlFor="password">Contraseña</label>
-                        <input type="password" name='password' id='password' {...register("password", { required: "La contraseña es requerida", minLength: { value: 6, message: "Minimo 6 caracteres"}})}/>
+                        <input type="password" name='password' id='password' {...register("password", { required: "La contraseña es requerida", minLength: { value: 8, message: "Minimo 8 caracteres"}})}/>
                         {errors.password && <span className={styles.validacion}>Este campo es requerido..!</span>}
                     </div>
                     <div className={styles.formgroup}>

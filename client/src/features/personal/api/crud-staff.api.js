@@ -1,10 +1,6 @@
-import axios from 'axios'
+import api from '../../../api/axios'
 
-const staffApi = axios.create({
-    baseURL: "http://localhost:8000/personal/api-personal/Staff/",
-});
-
-export const getAllStaff = () => staffApi.get("/");
-export const createStaff = (staff) => staffApi.post("/", staff);
-export const deleteStaff = (id) => staffApi.delete(`${id}/`);
-export const updateStaff = (id, staff) => staffApi.put(`${id}/`, staff);
+export const getAllStaff = () => api.get("/personal/api-personal/Staff/");
+export const createStaff = (staff) => api.post("/personal/api-personal/Staff/", staff);
+export const deleteStaff = (id) => api.delete(`/personal/api-personal/Staff/${id}/`);
+export const updateStaff = (id, staff) => api.put(`/personal/api-personal/Staff/${id}/`, staff);

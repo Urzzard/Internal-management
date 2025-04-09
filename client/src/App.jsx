@@ -14,12 +14,22 @@ import { AdminPersonal } from "./features/personal/pages/adminPersonal/Admin-Per
 import { CrudGremio } from "./features/personal/pages/adminPersonal/gremio/CrudGremio";
 import { CrudRango } from "./features/personal/pages/adminPersonal/rango/CrudRango";
 import { CrudStaff } from "./features/personal/pages/adminPersonal/staff/CrudStaff";
+import { AuthProvider } from "./context/AuthContext";
+import { PrivateRoute } from "./components/PrivateRoute";
+import AxiosInterceptor from "./components/AxiosInterceptor";
+
 
 function App(){
   return(
+    
     <BrowserRouter>
-      <Content />
+      <AuthProvider>
+        <AxiosInterceptor>
+          <Content />
+        </AxiosInterceptor>
+      </AuthProvider> 
     </BrowserRouter>
+    
   );
 }
 
@@ -29,26 +39,26 @@ function Content(){
 
   return(
       <>
-      <Toaster/>
-       {showNav && <Navegacion/>}
-       <div className="content-wrapper">
-          <Routes>
-              <Route path="/" element={<Navigate to="/login"/>} />
-              <Route path="/login" element={<Login/>} />
-              <Route path="/inicio" element={<Inicio/>} />
-              <Route path="/inventario" element= {<Inventario/>} />
-              <Route path="/crud-categoria" element= {<CrudCategoria/>} />
-              <Route path="/crud-material" element={<CrudMaterial/>} />
-              <Route path="/crud-registro-mat" element={<CrudRegistroMat/>}/>
-              <Route path="/personal" element={<Personal/>}/>
-              <Route path="/crud-personal" element={<CrudPersonal/>}/>
-              <Route path="/admin-personal" element={<AdminPersonal/>}/>
-              <Route path="/crud-gremio" element={<CrudGremio/>}/>
-              <Route path="/crud-rango" element={<CrudRango/>}/>
-              <Route path="/crud-staff" element={<CrudStaff/>}/>
-          </Routes>
-       </div>
-        <Footer/>
+        <Toaster/>
+        {showNav && <Navegacion/>}
+        <div className="content-wrapper">
+            <Routes>
+                <Route path="/" element={<Navigate to="/login"/>} />
+                <Route path="/login" element={<Login/>} />
+                <Route path="/inicio" element={<PrivateRoute adminOnly><Inicio/></PrivateRoute>} />
+                <Route path="/inventario" element= {<PrivateRoute adminOnly><Inventario/></PrivateRoute>} />
+                <Route path="/crud-categoria" element= {<PrivateRoute><CrudCategoria/></PrivateRoute>} />
+                <Route path="/crud-material" element={<PrivateRoute><CrudMaterial/></PrivateRoute>} />
+                <Route path="/crud-registro-mat" element={<PrivateRoute><CrudRegistroMat/></PrivateRoute>}/>
+                <Route path="/personal" element={<PrivateRoute><Personal/></PrivateRoute>}/>
+                <Route path="/crud-personal" element={<PrivateRoute><CrudPersonal/></PrivateRoute>}/>
+                <Route path="/admin-personal" element={<PrivateRoute><AdminPersonal/></PrivateRoute>}/>
+                <Route path="/crud-gremio" element={<PrivateRoute><CrudGremio/></PrivateRoute>}/>
+                <Route path="/crud-rango" element={<PrivateRoute><CrudRango/></PrivateRoute>}/>
+                <Route path="/crud-staff" element={<PrivateRoute><CrudStaff/></PrivateRoute>}/>
+            </Routes>
+        </div>
+          <Footer/>
       </>
   );
 }

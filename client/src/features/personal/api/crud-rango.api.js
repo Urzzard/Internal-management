@@ -1,10 +1,8 @@
-import axios from 'axios'
+import api from "../../../api/axios";
 
-const rangoApi = axios.create({
-    baseURL: "http://localhost:8000/personal/api-personal/Rango/",
-});
+const url = "/personal/api-personal/Rango/"; 
 
-export const getAllrango = () => rangoApi.get("/");
-export const createrango = (rango) => rangoApi.post("/", rango);
-export const deleterango = (id) => rangoApi.delete(`${id}/`);
-export const updaterango = (id, rango) => rangoApi.put(`${id}/`, rango);
+export const getAllrango = () => api.get(url);
+export const createrango = (rango) => api.post(url, rango);
+export const deleterango = (id) => api.delete(`${url}${id}/`);
+export const updaterango = (id, rango) => api.put(`${url}${id}/`, rango);
