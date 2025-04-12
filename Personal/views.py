@@ -2,16 +2,16 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import viewsets, status
 from django.shortcuts import render
-from .serializer import UsuariosSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, PcasaSerializer, PsubcontratoSerializer, PsindicatoSerializer, GremioSerializer
-from .models import Usuarios, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio
+from .serializer import PersonalSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, PcasaSerializer, PsubcontratoSerializer, PsindicatoSerializer, GremioSerializer
+from .models import Personal, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 # Create your views here.
 
 
-class UsuariosView(viewsets.ModelViewSet):
-    serializer_class = UsuariosSerializer
-    queryset = Usuarios.objects.all()
+class PersonalView(viewsets.ModelViewSet):
+    serializer_class = PersonalSerializer
+    queryset = Personal.objects.all()
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
@@ -41,7 +41,7 @@ class UsuariosView(viewsets.ModelViewSet):
 
 class StaffView(viewsets.ModelViewSet):
     serializer_class = StaffSerializer
-    queryset = Staff.objects.select_related('usuario', 'user').all()
+    queryset = Staff.objects.select_related('personal', 'user').all()
     permission_classes = [IsAuthenticated, IsAdminUser]
 
 class RangoView(viewsets.ModelViewSet):

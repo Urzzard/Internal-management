@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Usuarios, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio 
+from .models import Personal, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio 
 from django.contrib.auth.models import User
 
 
@@ -20,9 +20,9 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
-class UsuariosSerializer(serializers.ModelSerializer):
+class PersonalSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Usuarios
+        model = Personal
         fields = '__all__'
         extra_kwargs = {
             'dni_img': {'required': False, 'allow_null': True, 'write_only': True}
@@ -40,15 +40,15 @@ class UsuariosSerializer(serializers.ModelSerializer):
     
 class PersonalInfoBasicaSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Usuarios
+        model = Personal
         fields = ['id', 'nombre', 'a_paterno', 'a_materno', 'dni', 'email']
 
 class StaffSerializer(serializers.ModelSerializer):
     user = UserSerializer(required=True)
-    usuario = PersonalInfoBasicaSerializer(read_only=True)
+    personal = PersonalInfoBasicaSerializer(read_only=True)
     usuario_id = serializers.PrimaryKeyRelatedField(
-        queryset = Usuarios.objects.all(),
-        source='usuario',
+        queryset = Personal.objects.all(),
+        source='personal',
         write_only=True
     )
 
@@ -56,21 +56,16 @@ class StaffSerializer(serializers.ModelSerializer):
         model = Staff
         fields = '__all__'
     
-    """ class Meta:
-        model = Staff
-        fields = ['id', 'usuario_id', 'cargo', 'rm', 'user']
-        read_only_fields = ['id'] """
-    
     def create(self, validated_data):
         user_data = validated_data.pop('user')
-        usuario = validated_data.pop('usuario')
+        personal = validated_data.pop('personal')
         user = User.objects.create_user(
             username=user_data['username'],
             password=user_data['password'],
             is_staff = True
         )
         
-        staff = Staff.objects.create(user=user, usuario=usuario, **validated_data)
+        staff = Staff.objects.create(user=user, personal=personal, **validated_data)
         return staff
 
 class RangoSerializer(serializers.ModelSerializer):

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from 'react-hook-form'
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { getAllU, createU, deleteU, updateU } from "../../api/crud-usuarios.api";
+import { getAllPers, createPers, deletePers, updatePers } from "../../api/crud-personal.api";
 import { getDistritos, getPaises, getProvincias, getRegiones } from "../../../../api/info-geografica.api";
 import { BaseLayout } from "../../../../components/layout/BaseLayout";
 import './Personal.css'
@@ -114,7 +114,7 @@ export function CrudPersonal(){
         }
 
         try{
-            await createU(formData)
+            await createPers(formData)
             toast.success('Usuario Creado')
             setImagenDni(null);
             setPreviewImg(null);
@@ -155,7 +155,7 @@ export function CrudPersonal(){
 
     useEffect(() =>{
         async function loadU() {
-            const res = await getAllU();
+            const res = await getAllPers();
             setU(res.data);
         }
         loadU();
@@ -546,7 +546,7 @@ export function CrudPersonal(){
                                             <button onClick={async() => {
                                                 const accepted = window.confirm('Estas seguro de eliminar este Usuario?')
                                                 if(accepted){
-                                                    await deleteU(u.id)
+                                                    await deletePers(u.id)
                                                     toast.success('Usuario Eliminado');
                                                     setTimeout(() =>{
                                                         navigate(0)
@@ -780,7 +780,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
         }
 
         try {
-            await updateU(u.id, formData);
+            await updatePers(u.id, formData);
             onClose();
             toast.success('Editado con exito')
             setTimeout(() =>{

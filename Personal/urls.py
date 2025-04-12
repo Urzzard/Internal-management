@@ -4,7 +4,7 @@ from rest_framework.documentation import include_docs_urls
 from Personal import views
 
 router = routers.DefaultRouter()
-router.register(r'Usuarios', views.UsuariosView, 'usuarios')
+router.register(r'Personal', views.PersonalView, 'personal')
 router.register(r'Staff', views.StaffView, 'staff')
 router.register(r'Rango', views.RangoView, 'rango')
 router.register(r'Gremio', views.GremioView, 'gremio')

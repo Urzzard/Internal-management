@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import {getAllU} from '../../../api/crud-usuarios.api'
+import {getAllPers} from '../../../api/crud-personal.api'
 import { getAllStaff, createStaff, updateStaff, deleteStaff } from '../../../api/crud-staff.api';
 import { useAuth } from '../../../../../context/AuthContext';
 
@@ -20,7 +20,7 @@ export function CrudStaff(){
             try{
                 const [stafRes, personalRes] = await Promise.all([
                     getAllStaff(),
-                    getAllU()
+                    getAllPers()
                 ]);
                 setStaff(stafRes.data)
                 setPersonal(personalRes.data)
@@ -208,7 +208,7 @@ export function CrudStaff(){
                         {sortedStaff.map(s => (
                             <tr key={s.id} className="border-b border-gray-200 hover:bg-gray-50">
                                 <td className="py-2 px-4">{s.id}</td>
-                                <td className="py-2 px-4">{s.usuario.nombre} {s.usuario.a_paterno}</td>
+                                <td className="py-2 px-4">{s.personal.nombre} {s.personal.a_paterno}</td>
                                 <td className="py-2 px-4">{s.cargo}</td>
                                 <td className="py-2 px-4">{s.username}</td>
                                 <td className="py-2 px-4">S/. {parseFloat(s.rm).toFixed(2)}</td>
