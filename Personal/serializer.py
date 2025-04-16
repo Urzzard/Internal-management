@@ -1,28 +1,64 @@
 from rest_framework import serializers
-from .models import Usuarios, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio 
+from .models import Personal, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio 
 from django.contrib.auth.models import User
 
-
-class UserSerializer(serializers.ModelSerializer):
+class BasicUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'password']
+        fields = ['id', 'username']
+
+class AdminUserManagementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'is_staff', 'date_joined', 'last_login']
+        read_only_fields = ['id', 'date_joined', 'last_login', 'is_staff']
         extra_kwargs = {
-            'password': {'write_only': True}
+            'email': {'required': False, 'allow_blank': True},
+            'first_name': {'required': False, 'allow_blank': True},
+            'last_name': {'required': False, 'allow_blank': True},
+        }
+
+    def update(self, instance, validated_data):
+        validated_data.pop('is_superuser', None)
+        validated_data.pop('is_staff', None)
+        validated_data.pop('password', None)
+
+        return super().update(instance, validated_data)
+
+class AdminUserCreateSerrializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'password', 'email', 'first_name', 'last_name']
+        extra_kwargs = {
+            'password': {'write_only': True, 'style': {'input_type': 'password'}},
+            'email': {'required': False},
+            'first_name': {'required': False},
+            'last_name': {'required': False},
         }
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            username=validated_data['username'],
-            password=validated_data['password'],
-            is_staff=True
+            username=validated_data["username"],
+            password=validated_data["password"],
+            email=validated_data.get('email', ''),
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            is_staff=True,
+            is_superuser=False,
+            is_active=True,
         )
+
+        #AQUI PODEMOS AGREGAR LA LOGICA PARA EL RESETEO DE PASSWORD Y ENVIAR AL CORREO
+
         return user
+    
 
 
-class UsuariosSerializer(serializers.ModelSerializer):
+
+class PersonalSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Usuarios
+        model = Personal
         fields = '__all__'
         extra_kwargs = {
             'dni_img': {'required': False, 'allow_null': True, 'write_only': True}
@@ -40,37 +76,34 @@ class UsuariosSerializer(serializers.ModelSerializer):
     
 class PersonalInfoBasicaSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Usuarios
+        model = Personal
         fields = ['id', 'nombre', 'a_paterno', 'a_materno', 'dni', 'email']
 
 class StaffSerializer(serializers.ModelSerializer):
-    user = UserSerializer(required=True)
-    usuario = PersonalInfoBasicaSerializer(read_only=True)
-    usuario_id = serializers.PrimaryKeyRelatedField(
-        queryset = Usuarios.objects.all(),
-        source='usuario',
-        write_only=True
+    user = BasicUserSerializer(read_only=True)
+    personal = PersonalInfoBasicaSerializer(read_only=True)
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset = User.objects.filter(is_staff=True, is_superuser=False, staff__isnull=True),
+        source='user',
+        write_only=True,
+        label="Usuario del Sistema"
+    )
+
+    personal_id = serializers.PrimaryKeyRelatedField(
+        queryset=Personal.objects.filter(staff_info__isnull=True),
+        source='personal',
+        write_only=True,
+        label="Registro de Personal"
     )
 
     class Meta:
         model = Staff
-        fields = '__all__'
-    
-    """ class Meta:
-        model = Staff
-        fields = ['id', 'usuario_id', 'cargo', 'rm', 'user']
-        read_only_fields = ['id'] """
+        fields = ['id', 'user', 'personal', 'cargo', 'rm', 'user_id', 'personal_id']
+        read_only_fields = ['id', 'user', 'personal']
     
     def create(self, validated_data):
-        user_data = validated_data.pop('user')
-        usuario = validated_data.pop('usuario')
-        user = User.objects.create_user(
-            username=user_data['username'],
-            password=user_data['password'],
-            is_staff = True
-        )
-        
-        staff = Staff.objects.create(user=user, usuario=usuario, **validated_data)
+         
+        staff = Staff.objects.create(**validated_data)
         return staff
 
 class RangoSerializer(serializers.ModelSerializer):

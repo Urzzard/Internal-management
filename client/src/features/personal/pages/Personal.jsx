@@ -8,7 +8,7 @@ export function Personal(){
 
     const menuOptions = [
         {
-            tittle: 'CRUD PERSONAL',
+            tittle: 'GESTIÓN DE DATOS DE PERSONAL',
             icon: addpersonal,
             path: '/crud-personal'
         },

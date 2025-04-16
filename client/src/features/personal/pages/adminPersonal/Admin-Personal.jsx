@@ -1,8 +1,11 @@
 import React from 'react';
 import { BaseLayout } from '../../../../components/layout/BaseLayout';
 import styles from './Admin-Personal.module.css';
+import { useAuth } from '../../../../context/AuthContext';
 
 export function AdminPersonal(){
+
+    const {user} = useAuth();
 
     return(
         <BaseLayout breadcrumbs={[
@@ -10,25 +13,31 @@ export function AdminPersonal(){
             {label: 'PERSONAL', path: '/personal'},
             {label: 'ADMINISTRACION DEL PERSONAL', path: '/admin-personal'}
         ]}>
-
-        <div className={styles.adminbox}>
-                <a href='/crud-staff' className={styles.adminlink}>
-                    <h2>ADMINISTRACION DE STAFF</h2>
-                </a>
-                <a href='/crud-gremio' className={styles.adminlink}>
-                    <h2>ADMINISTRACION DE GREMIO</h2>
-                </a>
-                <a href='/crud-rango' className={styles.adminlink}>
-                    <h2>ADMINISTRACION DE RANGO</h2>
-                </a>
-                <a href='crud-pcampo' className={styles.adminlink}>
-                    <h2>ADMINISTRACION DE PERSONAL DE CAMPO</h2>
-                </a>
-            </div>
+            {user.is_superuser &&(
+                <div className={styles.adminbox}>
+                    <a href='/crud-staff' className={styles.adminlink}>
+                        <h2>ADMINISTRACION DE STAFF</h2>
+                    </a>
+                    <a href='/crud-users' className={styles.adminlink}>
+                        <h2>ADMINISTRACION DE USUARIOS</h2>
+                    </a>
+                    <a href='/crud-gremio' className={styles.adminlink}>
+                        <h2>ADMINISTRACION DE GREMIO</h2>
+                    </a>
+                    <a href='/crud-rango' className={styles.adminlink}>
+                        <h2>ADMINISTRACION DE RANGO</h2>
+                    </a>
+                    <a href='/crud-pcampo' className={styles.adminlink}>
+                        <h2>ADMINISTRACION DE PERSONAL DE CAMPO</h2>
+                    </a>
+                    
+                </div>
+            )}
+            
             <div className={styles.adminlist}>
                 <div className={styles.adminlistsubtittle}>
                     <h2>
-                        LISTA DE PERSONAL
+                        LISTA POR CLASIFICACION DE PERSONAL
                     </h2>
                 </div>
                 <div className={styles.personallist}>

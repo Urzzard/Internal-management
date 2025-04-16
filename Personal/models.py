@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 # Create your models here.
 
 
-class Usuarios(models.Model):
+class Personal(models.Model):
     nombre = models.CharField(max_length=100)
     a_paterno = models.CharField(max_length=100)
     a_materno = models.CharField(max_length=100)
@@ -41,7 +41,7 @@ class Usuarios(models.Model):
 
 class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    usuario = models.OneToOneField(Usuarios, on_delete=models.CASCADE, related_name='staff_info')
+    personal = models.OneToOneField(Personal, on_delete=models.CASCADE, related_name='staff_info')
     cargo = models.CharField(max_length=200)
     rm = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -58,7 +58,7 @@ class Gremio(models.Model):
     porcentaje = models.DecimalField(max_digits=10, decimal_places=2)
 
 class PCampo(models.Model):
-    usuario = models.OneToOneField(Usuarios, on_delete=models.CASCADE, related_name='obrero_info')
+    personal = models.OneToOneField(Personal, on_delete=models.CASCADE, related_name='obrero_info')
     rango = models.ForeignKey(Rango, on_delete=models.SET_NULL, null=True, blank=True)
     gremio = models.ForeignKey(Gremio, on_delete=models.SET_NULL, null=True, blank=True)
     retcc_img = models.ImageField(upload_to='retcc/', blank=True, null=True)

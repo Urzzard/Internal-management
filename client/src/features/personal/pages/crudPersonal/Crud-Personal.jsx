@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useForm } from 'react-hook-form'
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { getAllU, createU, deleteU, updateU } from "../../api/crud-usuarios.api";
+import { getAllPers, createPers, deletePers, updatePers } from "../../api/crud-personal.api";
 import { getDistritos, getPaises, getProvincias, getRegiones } from "../../../../api/info-geografica.api";
 import { BaseLayout } from "../../../../components/layout/BaseLayout";
 import './Personal.css'
+import { useAuth } from "../../../../context/AuthContext";
 
 export function CrudPersonal(){
 
@@ -25,6 +26,8 @@ export function CrudPersonal(){
     const [selectedRegion, setSelectedRegion] = useState("");
     const [selectedProvincia, setSelectedProvincia] = useState("");
     const [selectedDistrito, setSelectedDistrito] = useState("")
+
+    const {user} = useAuth();
 
 
     useEffect(() =>{
@@ -114,7 +117,7 @@ export function CrudPersonal(){
         }
 
         try{
-            await createU(formData)
+            await createPers(formData)
             toast.success('Usuario Creado')
             setImagenDni(null);
             setPreviewImg(null);
@@ -155,7 +158,7 @@ export function CrudPersonal(){
 
     useEffect(() =>{
         async function loadU() {
-            const res = await getAllU();
+            const res = await getAllPers();
             setU(res.data);
         }
         loadU();
@@ -239,282 +242,270 @@ export function CrudPersonal(){
 
      return(
         <div className={`personal ${selected ? "modal-open": ""}`}>
-            {/* <div className="navegador">
-                <a href="/personal">
-                    <h3>PERSONAL</h3>
-                </a>
-                <div className="slash">
-                    <h3>\</h3>
-                </div>
-                <a href="/crud-personal">
-                    <h3>CRUD - PERSONAL</h3>
-                </a>
-                
-            </div>
-            <div className="c-principal"> */}
 
                 <BaseLayout breadcrumbs={[
                     {label: 'INICIO', path: '/inicio'},
                     {label: 'PERSONAL', path: '/personal'},
                     {label: 'CRUD PERSONAL', path: '/crud-personal'}
                 ]}>
-                <div className="crear">
-                    <h2 onClick={slide} style={{cursor:'pointer'}}>REGISTRAR NUEVO PERSONAL</h2>
-                {(visible &&
-                    <form onSubmit={onSubmit}>
-                        <div className="f1">
-                            <div className="rp-nombre">
-                                <label htmlFor="nombre">Nombre:</label>
-                                <input type="text" name="nombre" className="form-control" id="nombre"
-                                    {...register("nombre", {required: true})}
-                                />
-                                {errors.nombre && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-a_paterno">
-                                <label htmlFor="a_paterno">Apellido Paterno:</label>
-                                <input type="text" name="a_paterno" className="form-control" id="a_paterno"
-                                    {...register("a_paterno", {required: true})}
-                                />
-                                {errors.a_paterno && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-a_materno">
-                                <label htmlFor="a_materno">Apellido Materno:</label>
-                                <input type="text" name="a_materno" className="form-control" id="a_materno"
-                                    {...register("a_materno", {required: true})}
-                                />
-                                {errors.a_materno && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-dni">
-                                <label htmlFor="dni">DNI:</label>
-                                <input type="number" name="dni" className="form-control" id="dni" maxLength={8}
-                                    {...register("dni", {required: true})}
-                                />
-                                {errors.dni && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                        </div>
-                        <div className="f2">
-                            <div className="rp-dni_img">
-                                <label htmlFor="dni_img">Imagen de DNI:</label>
-                                <div className="dni_img_box">
-                                    <div className="dni_img_subbox">
-                                        <input type="file" name="dni_img" id="dni_img" onChange={handleFileChange}/>
-                                        {errors.dni_img && <span className="validacion1" >Este campo es requerido!!</span>}
-                                        <small className="form-text text-muted">
-                                            {imagenDni ? `Archivo seleccionado: ${imagenDni.name}` : `No existe imagen seleccionada`}
-                                        </small>
+                {user.is_superuser && (
+                    <div className="crear">
+                        <h2 onClick={slide} style={{cursor:'pointer'}}>REGISTRAR NUEVO PERSONAL</h2>
+                        {(visible &&
+                            <form onSubmit={onSubmit}>
+                                <div className="f1">
+                                    <div className="rp-nombre">
+                                        <label htmlFor="nombre">Nombre:</label>
+                                        <input type="text" name="nombre" className="form-control" id="nombre"
+                                            {...register("nombre", {required: true})}
+                                        />
+                                        {errors.nombre && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-a_paterno">
+                                        <label htmlFor="a_paterno">Apellido Paterno:</label>
+                                        <input type="text" name="a_paterno" className="form-control" id="a_paterno"
+                                            {...register("a_paterno", {required: true})}
+                                        />
+                                        {errors.a_paterno && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-a_materno">
+                                        <label htmlFor="a_materno">Apellido Materno:</label>
+                                        <input type="text" name="a_materno" className="form-control" id="a_materno"
+                                            {...register("a_materno", {required: true})}
+                                        />
+                                        {errors.a_materno && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-dni">
+                                        <label htmlFor="dni">DNI:</label>
+                                        <input type="number" name="dni" className="form-control" id="dni" maxLength={8}
+                                            {...register("dni", {required: true})}
+                                        />
+                                        {errors.dni && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                </div>
+                                <div className="f2">
+                                    <div className="rp-dni_img">
+                                        <label htmlFor="dni_img">Imagen de DNI:</label>
+                                        <div className="dni_img_box">
+                                            <div className="dni_img_subbox">
+                                                <input type="file" name="dni_img" id="dni_img" onChange={handleFileChange}/>
+                                                {errors.dni_img && <span className="validacion1" >Este campo es requerido!!</span>}
+                                                <small className="form-text text-muted">
+                                                    {imagenDni ? `Archivo seleccionado: ${imagenDni.name}` : `No existe imagen seleccionada`}
+                                                </small>
+                                            </div>
+                                            
+                                            {previewImg && (
+                                                <div className="img_prev_box">
+                                                    <img src={previewImg} alt="vista previa" className="img-preview" />
+                                                    <button type="button" className="rmv_img_btn" onClick={removeImg}>
+                                                        Eliminar imagen
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                    </div>
+
+                                    <div className="rp-f_nacimiento">
+                                        <label htmlFor="f_nacimiento">Fecha de Nacimiento:</label>
+                                        <input type="date" name="f_nacimiento" className="form-control" id="f_nacimiento"
+                                            {...register("f_nacimiento", {required: true})}
+                                        />
+                                        {errors.f_nacimiento && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-edad">
+                                        <label htmlFor="edad">EDAD:</label>
+                                        <input type="number" name="edad" className="form-control" id="edad" maxLength={2}
+                                            {...register("edad", {required: true})}
+                                        />
+                                        {errors.edad && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-celular">
+                                        <label htmlFor="celular">Celular:</label>
+                                        <input type="number" name="celular" className="form-control" id="celular" maxLength={9}
+                                            {...register("celular", {required: true})}
+                                        />
+                                        {errors.celular && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-nro_emergencia">
+                                        <label htmlFor="nro_emergencia">N. Emergencia:</label>
+                                        <input type="number" name="nro_emergencia" className="form-control" id="nro_emergencia" maxLength={9}
+                                            {...register("nro_emergencia", {required: true})}
+                                        />
+                                        {errors.nro_emergencia && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                </div>
+
+                                <div className="f3">
+                                    <div className="rp-pais">
+                                        <label htmlFor="pais">Pais:</label>
+                                        <select name="pais" id="pais" className="form-control" value={selectedPais || ""} onChange={(e) => {setSelectedPais(e.target.value)}}
+                                        {...register("pais", { required: true, onChange: (e) => setSelectedPais(e.target.value) })}>
+                                                <option value="">Seleccione un Pais</option>
+                                                {pais.map((p) => (
+                                                    <option key={p.geonameId} value={p.geonameId}>
+                                                        {p.countryName}
+                                                    </option>
+                                                ))}
+                                                
+                                        </select>
+                                        {errors.pais && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+
+                                    <div className="rp-region">
+                                        <label htmlFor="region">Region:</label>
+                                        <select name="region" id="region" className="form-control" value={selectedRegion || ""} onChange={(e) => {setSelectedRegion(e.target.value)}} disabled={!region.length}
+                                            {...register("region", { required: true, onChange: (e) => setSelectedRegion(e.target.value) })}>
+                                                <option value="">Seleccione una Region</option>
+                                                {region.map((r) => (
+                                                    <option key={r.geonameId} value={r.geonameId}>
+                                                        {r.toponymName}
+                                                    </option>
+                                                ))}
+                                            
+                                        </select>
+                                        {errors.region && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+
+                                    <div className="rp-provincia">
+                                        <label htmlFor="provincia">Provincia:</label>
+                                        <select name="provincia" id="provincia" className="form-control" value={selectedProvincia || ""} onChange={(e) => {setSelectedProvincia(e.target.value)}} disabled={!provincia.length}
+                                            {...register("provincia", { required: true, onChange: (e) => setSelectedProvincia(e.target.value) })}>
+                                                <option value="">Seleccione una Provincia</option>
+                                                {provincia.map((prov) => (
+                                                    <option key={prov.geonameId} value={prov.geonameId}>
+                                                        {prov.toponymName}
+                                                    </option>
+                                                ))}
+                                            
+                                        </select>
+                                        {errors.provincia && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+
+                                    <div className="rp-distrito">
+                                        <label htmlFor="distrito">Distrito:</label>
+                                        <select name="distrito" id="distrito" className="form-control" value={selectedDistrito || ""} onChange={(e) => {setSelectedDistrito(e.target.value)}} disabled={!distrito.length}
+                                            {...register("distrito", { required: true, onChange: (e) => setSelectedDistrito(e.target.value) })}>
+                                                <option value="">Seleccione una Distrito</option>
+                                                {distrito.map((dist) => (
+                                                    <option key={dist.geonameId} value={dist.geonameId}>
+                                                        {dist.toponymName}
+                                                    </option>
+                                                ))}
+                                            
+                                        </select>
+                                        {errors.distrito && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                </div>
+
+
+                                <div className="f4">
+                                    <div className="rp-direccion">
+                                        <label htmlFor="direccion">Direccion:</label>
+                                        <input type="text" name="direccion" className="form-control" id="direccion"
+                                            {...register("direccion", {required: true})}
+                                        />
+                                        {errors.direccion && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-sexo">
+                                        <label htmlFor="sexo">Sexo:</label>
+                                        <select name="sexo" id="sexo" className="form-control"
+                                            {...register("sexo", {required: true})}>
+                                            <option value="Masculino">Masculino</option>
+                                            <option value="Femenino">Femenino</option>
+                                        </select>
+                                        {errors.sexo && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-e_civil">
+                                        <label htmlFor="e_civil">Estado Civil:</label>
+                                        <select name="e_civil" id="e_civil" className="form-control"
+                                            {...register("e_civil", {required: true})}>
+                                            <option value="Solter@">Solter@</option>
+                                            <option value="Casad@">Casad@</option>
+                                            <option value="Divorciad@">Divorciad@</option>
+                                            <option value="Viud@">Viud@</option>
+                                        </select>
+                                        {errors.e_civil && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-t_polo">
+                                        <label htmlFor="t_polo">T. Polo:</label>
+                                        <input type="text" name="t_polo" className="form-control" id="t_polo" maxLength={3}
+                                            {...register("t_polo", {required: true})}
+                                        />
+                                        {errors.t_polo && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-t_pantalon">
+                                        <label htmlFor="t_pantalon">T. Pantalon:</label>
+                                        <input type="number" name="t_pantalon" className="form-control" id="t_pantalon" maxLength={2}
+                                            {...register("t_pantalon", {required: true})}
+                                        />
+                                        {errors.t_pantalon && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-t_zapato">
+                                        <label htmlFor="t_zapato">T. Zapato:</label>
+                                        <input type="number" name="t_zapato" className="form-control" id="t_zapato" maxLength={2}
+                                            {...register("t_zapato", {required: true})}
+                                        />
+                                        {errors.t_zapato && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                </div>
+
+                                <div className="f5">
+                                    <div className="rp-email">
+                                        <label htmlFor="email">Email:</label>
+                                        <input type="text" name="email" className="form-control" id="email"
+                                            {...register("email", {required: true})}
+                                        />
+                                        {errors.email && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-cuenta_corriente">
+                                        <label htmlFor="cuenta_corriente">Cuenta Corriente:</label>
+                                        <input type="number" name="cuenta_corriente" className="form-control" id="cuenta_corriente" maxLength={18}
+                                            {...register("cuenta_corriente", {required: true})}
+                                        />
+                                        {errors.cuenta_corriente && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-cci">
+                                        <label htmlFor="cci">Cuenta Interbancaria:</label>
+                                        <input type="number" name="cci" className="form-control" id="cci" maxLength={20}
+                                            {...register("cci", {required: true})}
+                                        />
+                                        {errors.cci && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-f_ingreso">
+                                        <label htmlFor="f_ingreso">Fecha de Ingreso:</label>
+                                        <input type="date" name="f_ingreso" className="form-control" id="f_ingreso"
+                                            {...register("f_ingreso", {required: true})}
+                                        />
+                                        {errors.f_ingreso && <span className="validacion1" >Este campo es requerido!!</span>}
+                                    </div>
+                                    <div className="rp-estado">
+                                        <label htmlFor="estado">Estado Usuario:</label>
+                                        <select name="estado" id="estado" className="form-control"
+                                            {...register("estado", {required: true})}>
+                                            <option value="Activo">Activo</option>
+                                            <option value="Inactivo">Inactivo</option>
+                                            <option value="Despedido">Despedido</option>
+                                        </select>
+                                        {errors.estado && <span className="validacion1" >Este campo es requerido!!</span>}
                                     </div>
                                     
-                                    {previewImg && (
-                                        <div className="img_prev_box">
-                                            <img src={previewImg} alt="vista previa" className="img-preview" />
-                                            <button type="button" className="rmv_img_btn" onClick={removeImg}>
-                                                Eliminar imagen
-                                            </button>
-                                        </div>
-                                    )}
                                 </div>
+
+                                <div className="f6">
+                                    
+                                </div>
+
                                 
-                            </div>
-
-                            <div className="rp-f_nacimiento">
-                                <label htmlFor="f_nacimiento">Fecha de Nacimiento:</label>
-                                <input type="date" name="f_nacimiento" className="form-control" id="f_nacimiento"
-                                    {...register("f_nacimiento", {required: true})}
-                                />
-                                {errors.f_nacimiento && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-edad">
-                                <label htmlFor="edad">EDAD:</label>
-                                <input type="number" name="edad" className="form-control" id="edad" maxLength={2}
-                                    {...register("edad", {required: true})}
-                                />
-                                {errors.edad && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-celular">
-                                <label htmlFor="celular">Celular:</label>
-                                <input type="number" name="celular" className="form-control" id="celular" maxLength={9}
-                                    {...register("celular", {required: true})}
-                                />
-                                {errors.celular && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-nro_emergencia">
-                                <label htmlFor="nro_emergencia">N. Emergencia:</label>
-                                <input type="number" name="nro_emergencia" className="form-control" id="nro_emergencia" maxLength={9}
-                                    {...register("nro_emergencia", {required: true})}
-                                />
-                                {errors.nro_emergencia && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                        </div>
-
-                        <div className="f3">
-                            <div className="rp-pais">
-                                <label htmlFor="pais">Pais:</label>
-                                <select name="pais" id="pais" className="form-control" value={selectedPais || ""} onChange={(e) => {setSelectedPais(e.target.value)}}
-                                {...register("pais", { required: true, onChange: (e) => setSelectedPais(e.target.value) })}>
-                                        <option value="">Seleccione un Pais</option>
-                                        {pais.map((p) => (
-                                            <option key={p.geonameId} value={p.geonameId}>
-                                                {p.countryName}
-                                            </option>
-                                        ))}
-                                        
-                                </select>
-                                {errors.pais && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-
-                            <div className="rp-region">
-                                <label htmlFor="region">Region:</label>
-                                <select name="region" id="region" className="form-control" value={selectedRegion || ""} onChange={(e) => {setSelectedRegion(e.target.value)}} disabled={!region.length}
-                                    {...register("region", { required: true, onChange: (e) => setSelectedRegion(e.target.value) })}>
-                                        <option value="">Seleccione una Region</option>
-                                        {region.map((r) => (
-                                            <option key={r.geonameId} value={r.geonameId}>
-                                                {r.toponymName}
-                                            </option>
-                                        ))}
                                     
-                                </select>
-                                {errors.region && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-
-                            <div className="rp-provincia">
-                                <label htmlFor="provincia">Provincia:</label>
-                                <select name="provincia" id="provincia" className="form-control" value={selectedProvincia || ""} onChange={(e) => {setSelectedProvincia(e.target.value)}} disabled={!provincia.length}
-                                    {...register("provincia", { required: true, onChange: (e) => setSelectedProvincia(e.target.value) })}>
-                                        <option value="">Seleccione una Provincia</option>
-                                        {provincia.map((prov) => (
-                                            <option key={prov.geonameId} value={prov.geonameId}>
-                                                {prov.toponymName}
-                                            </option>
-                                        ))}
-                                    
-                                </select>
-                                {errors.provincia && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-
-                            <div className="rp-distrito">
-                                <label htmlFor="distrito">Distrito:</label>
-                                <select name="distrito" id="distrito" className="form-control" value={selectedDistrito || ""} onChange={(e) => {setSelectedDistrito(e.target.value)}} disabled={!distrito.length}
-                                    {...register("distrito", { required: true, onChange: (e) => setSelectedDistrito(e.target.value) })}>
-                                        <option value="">Seleccione una Distrito</option>
-                                        {distrito.map((dist) => (
-                                            <option key={dist.geonameId} value={dist.geonameId}>
-                                                {dist.toponymName}
-                                            </option>
-                                        ))}
-                                    
-                                </select>
-                                {errors.distrito && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                        </div>
-
-
-                        <div className="f4">
-                            <div className="rp-direccion">
-                                <label htmlFor="direccion">Direccion:</label>
-                                <input type="text" name="direccion" className="form-control" id="direccion"
-                                    {...register("direccion", {required: true})}
-                                />
-                                {errors.direccion && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-sexo">
-                                <label htmlFor="sexo">Sexo:</label>
-                                <select name="sexo" id="sexo" className="form-control"
-                                    {...register("sexo", {required: true})}>
-                                    <option value="Masculino">Masculino</option>
-                                    <option value="Femenino">Femenino</option>
-                                </select>
-                                {errors.sexo && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-e_civil">
-                                <label htmlFor="e_civil">Estado Civil:</label>
-                                <select name="e_civil" id="e_civil" className="form-control"
-                                    {...register("e_civil", {required: true})}>
-                                    <option value="Solter@">Solter@</option>
-                                    <option value="Casad@">Casad@</option>
-                                    <option value="Divorciad@">Divorciad@</option>
-                                    <option value="Viud@">Viud@</option>
-                                </select>
-                                {errors.e_civil && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-t_polo">
-                                <label htmlFor="t_polo">T. Polo:</label>
-                                <input type="text" name="t_polo" className="form-control" id="t_polo" maxLength={3}
-                                    {...register("t_polo", {required: true})}
-                                />
-                                {errors.t_polo && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-t_pantalon">
-                                <label htmlFor="t_pantalon">T. Pantalon:</label>
-                                <input type="number" name="t_pantalon" className="form-control" id="t_pantalon" maxLength={2}
-                                    {...register("t_pantalon", {required: true})}
-                                />
-                                {errors.t_pantalon && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-t_zapato">
-                                <label htmlFor="t_zapato">T. Zapato:</label>
-                                <input type="number" name="t_zapato" className="form-control" id="t_zapato" maxLength={2}
-                                    {...register("t_zapato", {required: true})}
-                                />
-                                {errors.t_zapato && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                        </div>
-
-                        <div className="f5">
-                            <div className="rp-email">
-                                <label htmlFor="email">Email:</label>
-                                <input type="text" name="email" className="form-control" id="email"
-                                    {...register("email", {required: true})}
-                                />
-                                {errors.email && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-cuenta_corriente">
-                                <label htmlFor="cuenta_corriente">Cuenta Corriente:</label>
-                                <input type="number" name="cuenta_corriente" className="form-control" id="cuenta_corriente" maxLength={18}
-                                    {...register("cuenta_corriente", {required: true})}
-                                />
-                                {errors.cuenta_corriente && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-cci">
-                                <label htmlFor="cci">Cuenta Interbancaria:</label>
-                                <input type="number" name="cci" className="form-control" id="cci" maxLength={20}
-                                    {...register("cci", {required: true})}
-                                />
-                                {errors.cci && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-f_ingreso">
-                                <label htmlFor="f_ingreso">Fecha de Ingreso:</label>
-                                <input type="date" name="f_ingreso" className="form-control" id="f_ingreso"
-                                    {...register("f_ingreso", {required: true})}
-                                />
-                                {errors.f_ingreso && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            <div className="rp-estado">
-                                <label htmlFor="estado">Estado Usuario:</label>
-                                <select name="estado" id="estado" className="form-control"
-                                    {...register("estado", {required: true})}>
-                                    <option value="Activo">Activo</option>
-                                    <option value="Inactivo">Inactivo</option>
-                                    <option value="Despedido">Despedido</option>
-                                </select>
-                                {errors.estado && <span className="validacion1" >Este campo es requerido!!</span>}
-                            </div>
-                            
-                        </div>
-
-                        <div className="f6">
-                            
-                        </div>
-
-                        
-                            
-                        <div className="btn-guardar ">
-                            <button className="hover:bg-teal-500">Guardar</button>
-                        </div>
-                    </form>
+                                <div className="btn-guardar ">
+                                    <button className="hover:bg-teal-500">Guardar</button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
                 )}
-                </div>
-                
                 <div className="mostrar">
                     <h2> LISTA DE PERSONAL REGISTRADO EN OBRA </h2>
                     <table className="min-w-ful ">
@@ -526,7 +517,7 @@ export function CrudPersonal(){
                                 <th className="u-dni" onClick={() => handleSort('dni')}>DNI {sortColumn === 'dni' && (sortDir === 'asc' ? '▲' : '▼')}</th>
                                 <th className="u-edad" onClick={() => handleSort('edad')}>EDAD {sortColumn === 'edad' && (sortDir === 'asc' ? '▲' : '▼')}</th>
                                 <th className="u-f_ingreso" onClick={() => handleSort('f_ingreso')}>F. INGRESO {sortColumn === 'f_ingreso' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                                <th className="u-opciones">OPCIONES</th>
+                                {user.is_superuser && (<th className="u-opciones">OPCIONES</th>)}
                             </tr>
                         </thead>
                         <tbody>
@@ -538,23 +529,26 @@ export function CrudPersonal(){
                                     <td>{u.dni}</td>
                                     <td>{u.edad}</td>
                                     <td>{u.f_ingreso}</td>
-                                    <td className="m-btn">
-                                        <div className="edit">
-                                            <button className="edit-btn hover:bg-teal-500" onClick={() => handleSelectedClick(u)} key={u.id}>EDITAR</button> 
-                                        </div>
-                                        <div className="delete">
-                                            <button onClick={async() => {
-                                                const accepted = window.confirm('Estas seguro de eliminar este Usuario?')
-                                                if(accepted){
-                                                    await deleteU(u.id)
-                                                    toast.success('Usuario Eliminado');
-                                                    setTimeout(() =>{
-                                                        navigate(0)
-                                                    }, 500)
-                                                }
-                                            }} id="eliminarusuario" name="eliminarusuario" value="" className="delete-btn hover:bg-red-400">ELIMINAR</button>
-                                        </div>
-                                    </td>
+                                    {user.is_superuser && (
+                                        <td className="m-btn">
+                                            <div className="edit">
+                                                <button className="edit-btn hover:bg-teal-500" onClick={() => handleSelectedClick(u)} key={u.id}>EDITAR</button> 
+                                            </div>
+                                            <div className="delete">
+                                                <button onClick={async() => {
+                                                    const accepted = window.confirm('Estas seguro de eliminar este Usuario?')
+                                                    if(accepted){
+                                                        await deletePers(u.id)
+                                                        toast.success('Usuario Eliminado');
+                                                        setTimeout(() =>{
+                                                            navigate(0)
+                                                        }, 500)
+                                                    }
+                                                }} id="eliminarusuario" name="eliminarusuario" value="" className="delete-btn hover:bg-red-400">ELIMINAR</button>
+                                            </div>
+                                        </td>
+                                    )}
+                                    
                                 </tr>
                             ))}
                             
@@ -579,7 +573,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
     const [provincia, setEProvincia] = useState(Iprovincias || []);
     const [distrito, setEDistrito] = useState(Idistritos || []);
 
-    console.log("Usuario recibido:", u)
+    /* console.log("Usuario recibido:", u) */
     const [formValues, setFormValues] = useState({
         nombre: u.nombre,
         a_paterno: u.a_paterno,
@@ -780,7 +774,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
         }
 
         try {
-            await updateU(u.id, formData);
+            await updatePers(u.id, formData);
             onClose();
             toast.success('Editado con exito')
             setTimeout(() =>{

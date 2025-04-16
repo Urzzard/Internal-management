@@ -318,6 +318,7 @@
                     border-bottom: solid 2px;
                     font-weight: bold;
                     font-size: 15px;
+                    cursor: pointer;
                 }
                 .cm-id{
                     width: 5%;
