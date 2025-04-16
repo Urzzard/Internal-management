@@ -1,4 +1,3 @@
-// Crea un archivo src/api/axios.js
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,7 +5,6 @@ const api = axios.create({
     baseURL: 'http://localhost:8000',
 });
 
-// Interceptor para añadir el token a cada petición
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -20,7 +18,6 @@ api.interceptors.request.use(
     }
 );
 
-// Interceptor para manejar errores de respuesta
 api.interceptors.response.use(
     (response) => response,
     (error) => {

@@ -12,8 +12,12 @@ router.register(r'PCampo', views.PCampoView, 'pcampo')
 router.register(r'Pcasa', views.PcasaView, 'pcasa')
 router.register(r'Psubcontrato', views.PsubcontratoView, 'psubcontrato')
 router.register(r'Psindicato', views.PsindicatoView, 'psindicato')
+router.register(r'AdminCreateUser', views.AdminUserCreateView, 'admin-create-user')
+router.register(r'AdminManageUsers', views.AdminUserManagementView, 'admin-manage-users')
 
 urlpatterns = [
     path("api-personal/", include(router.urls)),
-    path('personal-docs/', include_docs_urls(title="Api Personal"))
+    path("api-personal/eligible-users/", views.EligibleUsersForStaffView.as_view(), name='eligible-users'),
+    path("api-personal/eligible-personal/", views.EligiblePersonalForStaffView.as_view(), name='eligible-personal'),
+    path('personal-docs/', include_docs_urls(title="Api Personal")),
 ]

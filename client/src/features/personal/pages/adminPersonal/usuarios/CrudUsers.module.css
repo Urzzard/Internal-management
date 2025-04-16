@@ -1,0 +1,106 @@
+/* .userListContainer {
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.userListContainer h2 {
+    margin-bottom: 10px;
+    color: #333;
+}
+.userListContainer p {
+    margin-bottom: 20px;
+    color: #666;
+    font-size: 0.9em;
+} */
+
+.inactiveRow {
+    background-color: #fef2f2;
+    color: #9ca3af;
+}
+
+.inactiveRow:hover {
+     background-color: #fee2e2;
+}
+
+
+.activeStatus {
+    color: #0ea71b;
+    font-weight: bold;
+}
+
+.inactiveStatus {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.userListContainer{
+    width: 75%;
+
+    .userListTittle{
+        text-align: center;
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 30px;
+        text-decoration: underline;
+    }
+
+    table{
+        width: 100%;
+        text-align: center;
+
+        thead{
+            tr{
+                th{
+                    border-bottom: solid 2px;
+                    font-weight: bold;
+                    font-size: 15px;
+                }
+            }
+        }
+
+        tbody{
+            tr{
+                .btnListGroup{
+                    display: flex;
+                    margin: 10px 0px 10px 0px;
+                    justify-content: space-around;
+                    font-size: 12px;
+
+                    .btnEdit{
+                        background: #0ba7a7;
+                        color: white;
+                        border-radius: 5px;
+                        padding: 5px 8px;
+
+                    }
+                    .btnEdit:hover{
+                        background: #0cb4b4;
+                    }
+                    .btnDelete{
+                        background: rgb(219, 66, 66);
+                        color: white;
+                        border-radius: 5px;
+                        padding: 5px 8px;
+
+                    }
+                    .btnDelete:hover{
+                        background: rgb(248 113 113 / var(--tw-bg-opacity));
+                    }
+
+                    .btnReactiv{
+                        background: #0ea71b;
+                        color: white;
+                        border-radius: 5px;
+                        padding: 5px 8px;
+                    }
+                    .btnReactiv:hover{
+                        background: #12cc21;
+                    }
+
+                }
+            }
+        }
+    }
+}

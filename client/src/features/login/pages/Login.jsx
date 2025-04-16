@@ -21,36 +21,8 @@ export function Login(){
         
         const success = await login(username, password);
         if(!success){
-            setError('Credenciales incorrectas')
+            setError('Credenciales incorrectas o cuenta desactivada')
         }
-
-
-        /* try {
-            const res = await axios.post('http://localhost:8000/api/token/', {
-                username: username,
-                password: password
-            })
-
-            localStorage.setItem('accesToken', res.data.access);
-            localStorage.setItem('refreshToken', res.data.refresh);
-            localStorage.setItem('username', username)
-
-            
-
-            
-
-            toast.success('Credenciales Verificados!!')
-            setTimeout(() =>{
-                window.location.href = '/inicio';
-            }, 800)
-            
-        } catch(err){
-            toast.error('Usuario o Contraseña Incorrectos!!')
-            setTimeout(() =>{
-                window.location;
-            }, 700)
-            setError('Usuario o Contraseña incorrectos')
-        } */
     }
 
     return(

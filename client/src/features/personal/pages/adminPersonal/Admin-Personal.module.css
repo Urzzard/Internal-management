@@ -1,6 +1,8 @@
 .adminbox{
     width: 25%;
     margin-right: 5px;
+    padding-right: 10px;
+    border-right: 1px solid #a5a5a5;
     .adminlink{
         margin: 5px;
         
@@ -24,8 +26,6 @@
 
 .adminlist{
     width: 73%;
-    border-left: 1px solid #a5a5a5;
-    padding-left: 10px;
     .adminlistsubtittle{
         text-align: center;
         text-decoration: underline;

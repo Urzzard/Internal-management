@@ -39,11 +39,11 @@ form{
         }
 
         .btnguardar{
-            box-shadow: #144d48 2px 2px 2px;
+            box-shadow: #0ea71b 2px 2px 2px;
         }
 
         .btnguardar:hover{
-            background: #217c75;
+            background: #12cc21;
         }
     }
 

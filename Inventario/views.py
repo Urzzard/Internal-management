@@ -6,6 +6,7 @@ from openpyxl import load_workbook
 import pandas as pd
 from .serializer import CategoriaSerializer, MaterialSerializer
 from .models import Material, CategoriaMaterial
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
 
 # Create your views here.
@@ -13,6 +14,7 @@ from .models import Material, CategoriaMaterial
 class CategoriaView(viewsets.ModelViewSet):
     serializer_class = CategoriaSerializer
     queryset = CategoriaMaterial.objects.all()
+    permission_classes = [IsAdminUser, IsAuthenticated]
 
 class MaterialView(viewsets.ModelViewSet):
     serializer_class = MaterialSerializer
