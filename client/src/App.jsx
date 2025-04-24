@@ -15,6 +15,7 @@ import { CrudGremio } from "./features/personal/pages/adminPersonal/gremio/CrudG
 import { CrudRango } from "./features/personal/pages/adminPersonal/rango/CrudRango";
 import { CrudStaff } from "./features/personal/pages/adminPersonal/staff/CrudStaff";
 import { CrudUsers } from "./features/personal/pages/adminPersonal/usuarios/CrudUsers";
+import { CrudPcampo } from "./features/personal/pages/adminPersonal/pcampo/CrudPcampo";
 import { AuthProvider } from "./context/AuthContext";
 import { PrivateRoute } from "./components/PrivateRoute";
 import AxiosInterceptor from "./components/AxiosInterceptor";
@@ -36,7 +37,7 @@ function App(){
 
 function Content(){
   const location = useLocation();
-  const showNav = ["/inicio", "/inventario", "/crud-categoria", "/crud-material", "/crud-registro-mat", "/personal", "/crud-personal", "/admin-personal", "/crud-gremio", "/crud-rango", "/crud-staff", "/crud-users"].includes(location.pathname);
+  const showNav = ["/inicio", "/inventario", "/crud-categoria", "/crud-material", "/crud-registro-mat", "/personal", "/crud-personal", "/admin-personal", "/crud-gremio", "/crud-rango", "/crud-staff", "/crud-users", "/crud-pcampo"].includes(location.pathname);
 
   return(
       <>
@@ -58,6 +59,7 @@ function Content(){
                 <Route path="/crud-rango" element={<PrivateRoute><CrudRango/></PrivateRoute>}/>
                 <Route path="/crud-staff" element={<PrivateRoute><CrudStaff/></PrivateRoute>}/>
                 <Route path="/crud-users" element={<PrivateRoute><CrudUsers/></PrivateRoute>}/>
+                <Route path="/crud-pcampo" element={<PrivateRoute><CrudPcampo/></PrivateRoute>}/>
             </Routes>
         </div>
           <Footer/>

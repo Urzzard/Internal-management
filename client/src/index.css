@@ -93,3 +93,17 @@ h2{
     color: rgb(219, 66, 66);
     font-weight: bold;
 }
+
+.loading{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: auto;
+    flex-wrap: wrap;
+    width: 200px;
+
+    img{
+        width: 150px;
+    }
+
+}

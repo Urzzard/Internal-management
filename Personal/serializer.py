@@ -105,7 +105,7 @@ class StaffSerializer(serializers.ModelSerializer):
          
         staff = Staff.objects.create(**validated_data)
         return staff
-
+    
 class RangoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rango
@@ -116,10 +116,52 @@ class GremioSerializer(serializers.ModelSerializer):
         model = Gremio
         fields = '__all__'
 
+
 class PCampoSerializer(serializers.ModelSerializer):
+    gremio = GremioSerializer(read_only=True)
+    rango = RangoSerializer(read_only=True)
+    personal = PersonalInfoBasicaSerializer(read_only=True)
+
+    gremio_id = serializers.PrimaryKeyRelatedField(
+        queryset=Gremio.objects.all(),
+        source='gremio',
+        write_only=True,
+        label="Registro de Gremio"
+    )
+
+    rango_id = serializers.PrimaryKeyRelatedField(
+        queryset=Rango.objects.all(),
+        source='rango',
+        write_only=True,
+        label="Registro de Rango"
+    )
+
+    personal_id = serializers.PrimaryKeyRelatedField(
+        queryset=Personal.objects.filter(obrero_info__isnull=True),
+        source='personal',
+        write_only=True,
+        label="Registro de Personal"
+    )
+
+    
+
     class Meta:
         model = PCampo
-        fields = '__all__'
+        fields = ['id', 'personal_id', 'gremio_id', 'rango_id', 'retcc_img', 'retcc_estado', 'personal', 'gremio', 'rango']
+        read_only_fields = ['id', 'personal', 'gremio', 'rango']
+        extra_kwargs = {
+            'retcc_img': {'required': False, 'allow_null': True, 'write_only': True}
+        }
+
+    def update(self, instance, validated_data):
+        if 'retcc_img' not in validated_data or validated_data['retcc_img'] is None:
+            validated_data['retcc_img'] = instance.retcc_img
+        return super().update(instance, validated_data)
+    
+    def get_retcc_img_name(self, obj):
+        if obj.retcc_img:
+            return obj.retcc_img.name.split('/')[-1]
+        return None
 
 class PcasaSerializer(serializers.ModelSerializer):
     class Meta:

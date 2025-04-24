@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import loadingLogo from '../assets/logo.png'
 
 const AuthContext = createContext();
 
@@ -92,7 +93,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     if(loading){
-        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Cargando...</div>
+        return <div className='loading'>
+                <img src={loadingLogo} alt="" />
+                <p>
+                Cargando...
+                </p>
+            </div>
     }
 
     return (

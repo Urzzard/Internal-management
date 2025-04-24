@@ -34,7 +34,7 @@ class PersonalView(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
 
     def create(self, request, *args, **kwargs):
-        #print("Archivos recibidos:", request.FILES)
+        print("Archivos recibidos:", request.FILES)
 
         sr = self.get_serializer(data=request.data)
         sr.is_valid(raise_exception=True)
@@ -68,7 +68,7 @@ class EligibleUsersForStaffView(generics.ListAPIView):
 
 class EligiblePersonalForStaffView(generics.ListAPIView):
     serializer_class = PersonalInfoBasicaSerializer
-    queryset = Personal.objects.filter(staff_info__isnull=True)
+    queryset = Personal.objects.filter(staff_info__isnull=True, obrero_info__isnull=True)
     permission_classes = [IsAuthenticated, IsAdminUser]
 
 class RangoView(viewsets.ModelViewSet):
@@ -83,8 +83,31 @@ class GremioView(viewsets.ModelViewSet):
 
 class PCampoView(viewsets.ModelViewSet):
     serializer_class = PCampoSerializer
-    queryset = PCampo.objects.all()
+    queryset = PCampo.objects.select_related('personal', 'gremio', 'rango').all()
     permission_classes = [IsAuthenticated, IsAdminUser]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def create(self, request, *args, **kwargs):
+        print("Archivos recibidos:", request.FILES)
+
+        sr = self.get_serializer(data=request.data)
+        sr.is_valid(raise_exception=True)
+        self.perform_create(sr)
+
+        hd = self.get_success_headers(sr.data)
+        return Response(sr.data, status=status.HTTP_201_CREATED, headers=hd)
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if 'retcc_img' not in request.data:
+            request.data._mutable = True
+            request.data['retcc_img'] = instance.retcc_img
+            request.data._mutable = False
+            
+        sr = self.get_serializer(instance, data=request.data, partial=True)
+        sr.is_valid(raise_exception=True)
+        self.perform_update(sr)
+        return Response(sr.data)
 
 class PcasaView(viewsets.ModelViewSet):
     serializer_class = PcasaSerializer
