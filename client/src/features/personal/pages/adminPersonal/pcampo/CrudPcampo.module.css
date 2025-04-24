@@ -127,7 +127,7 @@ form{
     align-items: center;
     background: rgba(0, 0, 0, 0.5);
 
-    .detallerango {
+    .detallepcampo {
         width: 500px;
         position: fixed;
         top: 50%;
@@ -142,6 +142,43 @@ form{
         h2{
             text-align: center;
             text-decoration: underline;
+        }
+
+        .formgroup{
+            .imgbox{
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                .img_prev_box{
+                    width: 50%;
+                }
+            }
+        }
+
+        .modalbtngroup{
+            display: flex;
+            margin: 30px 0px 10px 0px;
+            justify-content: center;
+
+            .saveBtn{
+                margin: 0px 20px 0px 20px;
+                color: white;
+                background: #0ea71b;
+                box-shadow: #144d48 2px 2px 2px;
+                border-radius: 5px;
+                padding: 5px;
+            }
+            .saveBtn:hover{
+                background: #12cc21;
+            }
+            .closeBtn{
+                margin: 0px 20px 0px 20px;
+                color: white;
+                background: #7e7e7e;
+                box-shadow: #144d48 2px 2px 2px;
+                border-radius: 5px;
+                padding: 5px;
+            }
         }
     }
     

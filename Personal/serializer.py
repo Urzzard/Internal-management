@@ -77,7 +77,7 @@ class PersonalSerializer(serializers.ModelSerializer):
 class PersonalInfoBasicaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Personal
-        fields = ['id', 'nombre', 'a_paterno', 'a_materno', 'dni', 'email']
+        fields = ['id', 'nombre', 'a_paterno', 'a_materno', 'dni', 'email', 'f_ingreso', 'estado']
 
 class StaffSerializer(serializers.ModelSerializer):
     user = BasicUserSerializer(read_only=True)
@@ -143,25 +143,40 @@ class PCampoSerializer(serializers.ModelSerializer):
         label="Registro de Personal"
     )
 
-    
+    retcc_img_url = serializers.ImageField(source='retcc_img', read_only=True)
 
     class Meta:
         model = PCampo
-        fields = ['id', 'personal_id', 'gremio_id', 'rango_id', 'retcc_img', 'retcc_estado', 'personal', 'gremio', 'rango']
-        read_only_fields = ['id', 'personal', 'gremio', 'rango']
+        fields = ['id', 'personal_id', 'gremio_id', 'rango_id', 'retcc_img', 'retcc_estado', 'personal', 'gremio', 'rango', 'retcc_img_url']
+        read_only_fields = ['id', 'personal', 'gremio', 'rango', 'retcc_img_url']
         extra_kwargs = {
             'retcc_img': {'required': False, 'allow_null': True, 'write_only': True}
         }
 
     def update(self, instance, validated_data):
-        if 'retcc_img' not in validated_data or validated_data['retcc_img'] is None:
-            validated_data['retcc_img'] = instance.retcc_img
+        image_update_request = self.context['request'].data.get('retcc_img')
+
+        if image_update_request == '':
+
+            if instance.retcc_img:
+                instance.retcc_img.delete(save=False)
+            instance.retcc_img = None
+            validated_data.pop('retcc_img', None)
+        elif isinstance(image_update_request, object) and hasattr(image_update_request, 'read'):
+            pass
+        else:
+            validated_data.pop('retcc_img', None)
+        
         return super().update(instance, validated_data)
+
+        """ if 'retcc_img' not in validated_data or validated_data['retcc_img'] is None:
+            validated_data['retcc_img'] = instance.retcc_img
+        return super().update(instance, validated_data) """
     
-    def get_retcc_img_name(self, obj):
+    """ def get_retcc_img_name(self, obj):
         if obj.retcc_img:
             return obj.retcc_img.name.split('/')[-1]
-        return None
+        return None """
 
 class PcasaSerializer(serializers.ModelSerializer):
     class Meta:

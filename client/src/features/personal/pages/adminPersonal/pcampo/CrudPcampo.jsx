@@ -125,10 +125,15 @@ export function CrudPcampo(){
         setSelected(pcampo)
     }
 
-    const [sortColumn, setSortColumn] = useState('');
+    const handlePcampoUpdated = () => {
+        loadData();
+    }
+
+    const [sortColumn, setSortColumn] = useState('id' || '');
     const [sortDir, setSortDir] = useState('asc');
 
     const handleSort = (column) => {
+        const currentSortPath = column.split('.');
         if (sortColumn === column){
             setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
 
@@ -139,29 +144,38 @@ export function CrudPcampo(){
     }
 
 
-    const sortedPcampo = [...pcampo].sort((a,b) => {
-        if(sortColumn){
-    
-            const aValue = a[sortColumn];
-            const bValue = b[sortColumn];
+    const sortedPcampo = [...pcampo].sort((a, b) => {
 
-            const numA = parseFloat(aValue);
-            const numB = parseFloat(bValue);
-            const isNumeric = !isNaN(numA) && !isNaN(numB)
-
-            if (isNumeric) {
-                if(numA < numB) return sortDir === 'asc' ? -1 : 1;
-                if(numA > numB) return sortDir === 'asc' ? 1 : -1;
-            }else{
-
-                if(aValue < bValue) return sortDir === 'asc' ? -1 : 1;
-                if(aValue > bValue) return sortDir === 'asc' ? 1 : -1;
+        const getValue = (obj, path) => {
+            try {
+               return path.split('.').reduce((o, k) => (o || {})[k], obj);
+            } catch(e) {
+                return undefined;
             }
+        }
 
+       let aValue = getValue(a, sortColumn);
+       let bValue = getValue(b, sortColumn);
+
+        if (aValue == null && bValue == null) return 0;
+        if (aValue == null) return sortDir === 'asc' ? -1 : 1;
+        if (bValue == null) return sortDir === 'asc' ? 1 : -1;
+
+        const numA = parseFloat(aValue);
+        const numB = parseFloat(bValue);
+        if (!isNaN(numA) && !isNaN(numB)) {
+            if (numA < numB) return sortDir === 'asc' ? -1 : 1;
+            if (numA > numB) return sortDir === 'asc' ? 1 : -1;
             return 0;
         }
-        return 0;
-    })
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            const comparison = aValue.localeCompare(bValue, undefined, { sensitivity: 'base' });
+            return sortDir === 'asc' ? comparison : -comparison;
+        }
+
+       return 0;
+   });
 
     return(
         <BaseLayout breadcrumbs={[
@@ -186,6 +200,7 @@ export function CrudPcampo(){
                             ))}
                         </select>
                         {errors.personal_id && <span className={styles.validacion}>Este campo es requerido..!</span>}
+                        {eligiblePersonal.length === 0 && !loading && <span className={styles.info}>No hay personal elegible (ya asignado o no existe).</span>}
                     </div>
                     <div className={styles.formgroup}>
                         <label htmlFor="gremio_id">Gremio</label>
@@ -251,47 +266,54 @@ export function CrudPcampo(){
                 <h3 className={styles.rangolisttitle}>
                     LISTA DE PERSONAL DE CAMPO
                 </h3>
-                <table className='min-w-full'>
-                    <thead>
-                        <tr>
-                            <th onClick={() => handleSort('id')}>ID {sortColumn === 'id' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                            <th onClick={() => handleSort('personal.nombre')}>NOMBRE DE PERSONAL {sortColumn === 'personal.nombre' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                            <th onClick={() => handleSort('gremio.nombre')}>GREMIO {sortColumn === 'gremio.nombre' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                            <th onClick={() => handleSort('rango.nombre')}>RANGO {sortColumn === 'rango.nombre' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                            <th>ACCIONES</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedPcampo.map(pcampo => (
-                            <tr key={pcampo.id} className="border-b border-gray-500 hover:bg-emerald-100 py-4">
-                                <td className='py-3 w-1/6'>{pcampo.id}</td>
-                                <td className='py-3 w-2/6'>{pcampo.personal?.nombre}</td>
-                                <td className='py-3 w-2/6'>{pcampo.gremio?.nombre}</td>
-                                <td className='py-3 w-2/6'>{pcampo.rango?.nombre}</td>
-                                <td className='py-3 flex justify-center'>
-                                    <div className=''>
-                                        <button className="edit-btn hover:bg-teal-500" onClick={() => handleSelectedClick(pcampo)} key={pcampo.id}>EDITAR</button>
-                                    </div>
-                                    <div className=''>
-                                        <button onClick={async() => {
-                                            const accepted = window.confirm('Estas seguro de eliminar este personal de campo?')
-                                            if(accepted){
-                                                await deletepcampo(pcampo.id)
-                                                toast.success('Personal de campo Eliminado');
-                                                setTimeout(() =>{
-                                                    navigate(0)
-                                                }, 500)
-                                            }
-                                        }} id='eliminarpcampo' name='eliminarpcampo' className="delete-btn hover:bg-red-400">ELIMINAR</button>
-                                    </div>
-                                </td>
+                {loading ? <p>Cargando lista...</p> : (
+                    <table className='min-w-full'>
+                        <thead>
+                            <tr>
+                                <th onClick={() => handleSort('id')}>ID {sortColumn === 'id' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                <th onClick={() => handleSort('personal.nombre')}>NOMBRE DE PERSONAL {sortColumn === 'personal.nombre' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                <th onClick={() => handleSort('gremio.nombre')}>GREMIO {sortColumn === 'gremio.nombre' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                <th onClick={() => handleSort('rango.nombre')}>RANGO {sortColumn === 'rango.nombre' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                <th onClick={() => handleSort('retcc_estado')}>ESTADO RETCC {sortColumn === 'retcc_estado' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                <th>ACCIONES</th>
                             </tr>
-                        ))}
-                        
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {sortedPcampo.map(pcampo => (
+                                <tr key={pcampo.id} className="border-b border-gray-500 hover:bg-emerald-100 py-4">
+                                    <td className='py-3 px-2'>{pcampo.id}</td>
+                                    <td className='py-3 px-2'>{pcampo.personal?.nombre}</td>
+                                    <td className='py-3 px-2'>{pcampo.gremio?.nombre}</td>
+                                    <td className='py-3 px-2'>{pcampo.rango?.nombre}</td>
+                                    <td className='py-3 px-2'>{pcampo.retcc_estado}</td>
+                                    <td className='py-3 flex justify-center'>
+                                        <div className=''>
+                                            <button className="edit-btn hover:bg-teal-500" onClick={() => handleSelectedClick(pcampo)} key={pcampo.id}>EDITAR</button>
+                                        </div>
+                                        <div className=''>
+                                            <button onClick={async() => {
+                                                const accepted = window.confirm('Estas seguro de eliminar este personal de campo?')
+                                                if(accepted){
+                                                    await deletepcampo(pcampo.id)
+                                                    toast.success('Personal de campo Eliminado');
+                                                    setTimeout(() =>{
+                                                        navigate(0)
+                                                    }, 500)
+                                                }
+                                            }} id='eliminarpcampo' name='eliminarpcampo' className="delete-btn hover:bg-red-400">ELIMINAR</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {sortedPcampo.length === 0 && !loading && (
+                                <tr><td colSpan="6" className='text-center py-4'>No hay personal de campo registrado.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                )}
+                
                 {selected && (
-                    <EditPcampo pcampo={selected} onClose={() => setSelected(null)}/>
+                    <EditPcampo pcampo={selected} onClose={() => setSelected(null)} onPcampoUpdated={handlePcampoUpdated} gremios={gremio} rangos={rango}/>
                 )}
             </div>
 
@@ -300,52 +322,164 @@ export function CrudPcampo(){
 
 }
 
-/* function EditPcampo({pcampo, onClose}){
-    const [ formValues, setFormValues] = useState({
-        gremio: pcampo.gremio_id,
-        rango: pcampo.rango_id,
-        retcc_img: pcampo.retcc_img,
-        retcc_estado: pcampo.retcc_estado
-    })
+function EditPcampo({pcampo, onClose, gremios = [], rangos = [], onPcampoUpdated}){
+    const {register, handleSubmit, formState:{errors}, setValue, watch} = useForm();
+    const [previewImg, setPreviewImg] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [imgFile, setImgFile] = useState(null);
 
-    const handleInputChange = (e) => {
-        const {name, value} = e.target;
-        setFormValues({
-            ...formValues,
-            gremio,
-            [name]:value
-        })
-    }
+    useEffect(() => {
+        if(pcampo){
+            setValue('gremio_id', pcampo.gremio?.id || '')
+            setValue('rango_id', pcampo.rango?.id || '')
+            setValue('retcc_estado', pcampo.retcc_estado || '')
 
-    const handleSubmit2 = async () => {
-        try{
-            await updatepcampo(pcampo.id, formValues);
-            onClose();
-            toast.success('Personal de Campo actualizado')
-            setTimeout(() => {
-                window.location.reload()
-            }, 700)
-        }catch(error){
-            toast.error('No se pudo actualizar al personal de campo')
-            console.log(error)
+            if(pcampo.retcc_img_url){
+
+                //POSIBLE DILEMA AQUI ¿LA DIRECCION ES CORRECTA?
+
+                setPreviewImg(pcampo.retcc_img_url)
+            } else {
+                setPreviewImg(null)
+            }
+            setImgFile(null)
         }
+        
+    }, [pcampo, setValue]);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0]
+        if(file){
+            setImgFile(file);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setPreviewImg(event.target.result);
+            };
+            reader.readAsDataURL(file)
+        } else{
+            setImgFile(null);
+            setPreviewImg(pcampo.retcc_img_url ? pcampo.retcc_img_url : null)
+        }
+    };
+
+    const handleRemoveImg = () => {
+        setPreviewImg(null);
+        setImgFile(null);
+
+        // OTRO DILEMA, SE BORRA LA IMAGEN ANTERIOR POR MANDAR EL CAMPO VACIO?
+
+        const fileInput = document.getElementById('edit_retcc_img');
+        if(fileInput) fileInput.value = null;
     }
+
+    const onEditSubmit = handleSubmit(async (data) => {
+        setIsSubmitting(true);
+        const formData = new FormData();
+
+        formData.append('gremio_id', data.gremio_id);
+        formData.append('rango_id', data.rango_id);
+        formData.append('retcc_estado', data.retcc_estado);
+
+        if(imgFile){
+            formData.append('retcc_img', imgFile)
+        } else if(!previewImg && pcampo.retcc_img_url){
+            formData.append('retcc_img', '');
+        }
+
+        console.log("FormData a enviar para la actualizacion")
+        for(let [key, value] of formData.entries()){
+            console.log(key, value)
+        }
+
+        try{
+            await updatepcampo(pcampo.id, formData);
+            toast.success('Personal de Campo actualizado correctamente')
+            onPcampoUpdated();
+            onClose()
+        } catch(error){
+            console.error("Error actualizando PCampo", error.response?.data || error)
+            toast.error('Error al actualizar. Revisa los datos.')
+
+            if(error.response?.data){
+                let errorMsg = "Error: ";
+                const errorsData = error.response.data;
+                Object.keys(errorsData).forEach(key => {
+                    errorMsg += `${key}: ${errorsData[key].join ? errorsData[key].join(', ') : errorsData[key]}`
+                });
+                toast.error(errorMsg.trim())
+            }
+        } finally{
+            setIsSubmitting(false)
+        }
+    });
+
+    if(!pcampo) return null
 
     return(
         <div className={styles.modal}>
             <div className={styles.detallepcampo}>
                 <h2>EDITAR PERSONAL DE CAMPO</h2>
-                <form onSubmit={(e) => e.preventDefault()}>
-                    <div>
+                <form onSubmit={onEditSubmit}>
+                    <div className={styles.formgroup}>
                         <label htmlFor="gremio_id">Gremio</label>
-                        <select name="gremio_id" id="gremio_id">
-                            {gremio.map(g => (
-                                <option value={g.gremio}>{g.gremio}</option>
+                        <select name="gremio_id" id="gremio_id" {...register("gremio_id", {required: "Seleccione un gremio"})}>
+                            <option value="">Seleccione...</option>
+                            {gremios.map(g => (
+                                <option key={g.id} value={g.id}>{g.nombre}</option>
                             ))}
                         </select>
+                        {errors.gremio_id && <span className={styles.validacion}>Este campo es requerido..!</span>}
+                    </div>
+                    <div className={styles.formgroup}>
+                        <label htmlFor="rango_id">Rango</label>
+                        <select name="rango_id" id="rango_id" {...register("rango_id", {required: "Seleccione un rango"})}>
+                            <option value="">Seleccione...</option>
+                            {rangos.map(r => (
+                                <option key={r.id} value={r.id}>{r.nombre}</option>
+                            ))}
+                        </select>
+                        {errors.rango_id && <span className={styles.validacion}>Este campo es requerido..!</span>}
+                    </div>
+                    <div className={styles.formgroup}>
+                        <label htmlFor="edit_retcc_img">Imagen del carnet RETCC (opcional)</label>
+                        <div className={styles.imgbox}>
+                            <div className={styles.imgsubox}>
+                                <input type="file" name="edit_retcc_img" id="edit_retcc_img" accept="image/*" onChange={handleFileChange} />
+                                <small>
+                                    {imgFile ? `Nuevo: ${imgFile.name}` : (previewImg ? 'Imagen actual cargada' : 'No hay imagen')}
+                                </small>
+                            </div>
+                            {previewImg && (
+                                <div className={styles.img_prev_box}>
+                                    <img src={previewImg} alt="Vista previa RETCC" className='img-preview' />
+                                    <button type='button' className={styles.btnDelete} onClick={handleRemoveImg}>
+                                        Eliminar Imagen
+                                    </button>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                    <div className={styles.formgroup}>
+                        <label htmlFor="retcc_estado">Estado del carnet RETCC</label>
+                        <select name="retcc_estado" id="retcc_estado" {...register("retcc_estado", {required: "Seleccione el estado"})}>
+                            <option value="">Seleccione...</option>
+                            <option value="Vigente">Vigente</option>
+                            <option value="Vencido">Vencido</option>
+                            <option value="No tiene">No tiene</option>
+                        </select>
+                        {errors.retcc_estado && <span className={styles.validacion}>Este campo es requerido..!</span>}
+                    </div>
+                    <div className={styles.modalbtngroup}>
+                        <button type='submit' className={styles.saveBtn} disabled={isSubmitting}>
+                            {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                        </button>
+                        <button type='button' className={styles.closeBtn} onClick={onClose} disabled={isSubmitting}>
+                            Cancelar
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     )
-} */
+}
