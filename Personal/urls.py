@@ -9,9 +9,9 @@ router.register(r'Staff', views.StaffView, 'staff')
 router.register(r'Rango', views.RangoView, 'rango')
 router.register(r'Gremio', views.GremioView, 'gremio')
 router.register(r'PCampo', views.PCampoView, 'pcampo')
-router.register(r'Pcasa', views.PcasaView, 'pcasa')
+""" router.register(r'Pcasa', views.PcasaView, 'pcasa')
 router.register(r'Psubcontrato', views.PsubcontratoView, 'psubcontrato')
-router.register(r'Psindicato', views.PsindicatoView, 'psindicato')
+router.register(r'Psindicato', views.PsindicatoView, 'psindicato') """
 router.register(r'AdminCreateUser', views.AdminUserCreateView, 'admin-create-user')
 router.register(r'AdminManageUsers', views.AdminUserManagementView, 'admin-manage-users')
 

@@ -16,6 +16,7 @@
         flex-wrap: wrap;
         transition: all ease 0.2s;
         border-radius: 15px;
+        /* background: white; */
         img{
             width: 100%;
             margin-bottom: 20px;

@@ -1,11 +1,11 @@
 import styles from './CrudPcampo.module.css';
 import toast from 'react-hot-toast';
 import { BaseLayout } from '../../../../../components/layout/BaseLayout';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllpcampo, createpcampo, deletepcampo, updatepcampo } from '../../../api/crud-pcampo.api';
-import { getEligiblePersonal } from '../../../api/crud-staff.api';
+import { getAllStaff, getEligiblePersonal } from '../../../api/crud-staff.api';
 import { getAllrango } from '../../../api/crud-rango.api';
 import { getAllGremio } from '../../../api/crud-gremio.api'
 
@@ -18,8 +18,19 @@ export function CrudPcampo(){
     const [eligiblePersonal, setEligiblePersonal] = useState([]);
     const [rango, setRango] = useState([]);
     const [gremio, setGremio] = useState([]);
-    const [imagenRetcc, setImagenRetcc] = useState(null);
-    const [previewImg, setPreviewImg] = useState(null);
+    const [staff, setStaff] = useState([]);
+
+    const {register, handleSubmit, formState: {errors}, reset: resetCreateForm, watch: watchCreate, control: controlCreate } = useForm();
+    const [imgFileRetcc, setImgFileRetcc] = useState(null);
+    const [imgFileDniHijo, setImgFileDniHijo] = useState(null);
+    const [previewImgRetcc, setPreviewImgRetcc] = useState(null);
+    const [previewImgDniHijo, setPreviewImgDniHijo] = useState(null);
+
+    const watchedGremioId = watchCreate("gremio_id");
+    const selectedGremio = gremio.find(g => g.id === parseInt(watchedGremioId, 10));
+    const selectedGremioNombreLower = selectedGremio?.nombre.toLowerCase() || '';
+
+
 
     /* useEffect(() => {
         async function loadPcampo() {
@@ -33,16 +44,18 @@ export function CrudPcampo(){
         setLoading(true);
         try{
 
-            const [pcampoRes, personalRes, rangoRes, gremioRes] = await Promise.all([
+            const [pcampoRes, personalRes, rangoRes, gremioRes, staffRes] = await Promise.all([
                 getAllpcampo(),
                 getEligiblePersonal(),
                 getAllrango(),
-                getAllGremio()
+                getAllGremio(),
+                getAllStaff()
             ]);
-            setPcampo(pcampoRes.data)
-            setEligiblePersonal(personalRes.data)
-            setRango(rangoRes.data)
-            setGremio(gremioRes.data)
+            setPcampo(pcampoRes.data);
+            setEligiblePersonal(personalRes.data);
+            setRango(rangoRes.data);
+            setGremio(gremioRes.data);
+            setStaff(staffRes.data)
 
         }catch(error){
             console.error("Error al cargar la información:", error)
@@ -62,16 +75,59 @@ export function CrudPcampo(){
     }, [navigate]);
 
 
-    const {
+    const handleFileChangeHelper = (e, setFileState, setPreviewState) => {
+        const file = e.target.files[0];
+
+        if(file){
+            setFileState(file);
+            const reader = new FileReader();
+            reader.onload = (event) => setPreviewState(event.target.result)
+            reader.readAsDataURL(file);
+        }
+    }
+
+    const handleRemoveImageHelper = (setFileState, setPreviewState, inputId) => {
+        setPreviewState(null);
+        setFileState(null);
+        const fileInput = document.getElementById(inputId);
+        if (fileInput) fileInput.value = null;
+    }
+
+    /* const {
         register,
         handleSubmit,
         formState:{errors},
-    } = useForm()
+    } = useForm() */
 
     const onSubmit = handleSubmit(async (data) => {
         const formData = new FormData();
 
-        Object.keys(data).forEach(key => {
+        formData.append('personal_id', data.personal_id);
+        formData.append('gremio_id', data.gremio_id);
+        formData.append('rango_id', data.rango_id || '')
+        formData.append('retcc_estado', data.retcc_estado)
+
+        if(selectedGremioNombreLower.includes('casa')){
+            formData.append('srecomendado_id', data.srecomendado_id || '')
+            formData.append('ruc', data.ruc || '')
+            formData.append('c_sol', data.c_sol || '')
+        }
+
+        if(imgFileRetcc){
+            formData.append('retcc_img', imgFileRetcc);
+        }
+
+        if(imgFileDniHijo && selectedGremioNombreLower.includes('sindicato')){
+            formData.append('sdni_img_hijo', imgFileDniHijo)
+        }
+
+        if(data.retcc_estado !== 'No tiene' && !imgFileRetcc){
+            toast.error('La imagen RETCC es requerida si el estado no es "No tiene"')
+        }
+
+        // console.log("FormData CREATE:", Object.fromEntries(formData));
+
+        /* Object.keys(data).forEach(key => {
             formData.append(key, data[key])
         })
 
@@ -80,30 +136,46 @@ export function CrudPcampo(){
         } else{
             toast.error('Debes seleccionar una imagen adecuada..!')
             return;
-        }
+        } */
 
         try{
             await createpcampo(formData)
-            for(let [key,value] of formData.entries()){
+            /* for(let [key,value] of formData.entries()){
                 console.log(key,value);
-            }
+            } */
             
             toast.success('Personal de campo creado')
-            setImagenRetcc(null)
-            setPreviewImg(null)
-            setTimeout(() => {
-                navigate(0)
-            }, 800)
+            resetCreateForm();
+            setImgFileRetcc(null);
+            setImgFileDniHijo(null);
+            setPreviewImgRetcc(null);
+            setPreviewImgDniHijo(null);
+            loadData();
         } catch(error){
-            for(let [key,value] of formData.entries()){
-                console.log(key,value);
+            console.error("Error creando Pcampo:", error.response?.data || error);
+            toast.error('Error al registrar. Verifica los datos.')
+
+            if(error.response?.data){
+                let errorMsg = "Error: ";
+                const errorsData = error.response.data;
+                Object.keys(errorsData).forEach(key => {
+                    const message = Array.isArray(errorsData[key]) ? errorsData[key].join(', ') : errorsData[key];
+                    errorMsg += `${key} : ${message}` 
+                });
+
+                if(error.response.status === 400 && typeof errorsData === 'object'){
+                    toast.error(errorMsg.trim(), {duration: 5000});
+                } else {
+                    toast.error('Ocurrio un error inesperado al guardar.')
+                }
             }
-            toast.error('Erro al crear al personal de campo..!')
-            console.log(error)
+            /* for(let [key,value] of formData.entries()){
+                console.log(key,value);
+            } */
         }
     })
 
-    const handleFileChange = (e) => {
+    /* const handleFileChange = (e) => {
         const file = e.target.files[0];
         if(file){
             setImagenRetcc(file);
@@ -119,7 +191,7 @@ export function CrudPcampo(){
     const removeImg = () => {
         setImagenRetcc(null);
         setPreviewImg(null)
-    }
+    } */
 
     const handleSelectedClick = pcampo => {
         setSelected(pcampo)
@@ -129,7 +201,7 @@ export function CrudPcampo(){
         loadData();
     }
 
-    const [sortColumn, setSortColumn] = useState('id' || '');
+    const [sortColumn, setSortColumn] = useState('id');
     const [sortDir, setSortDir] = useState('asc');
 
     const handleSort = (column) => {
@@ -186,10 +258,7 @@ export function CrudPcampo(){
         ]}>
 
             <div className={styles.pcampoRegister}>
-                <h3>
-                    REGISTRO DE PERSONAL DE CAMPO
-                </h3>
-
+                <h3>REGISTRO DE PERSONAL DE CAMPO</h3>
                 <form onSubmit={onSubmit}>
                     <div className={styles.formgroup}>
                         <label htmlFor="personal_id">Personal</label>
@@ -222,30 +291,6 @@ export function CrudPcampo(){
                         </select>
                         {errors.rango_id && <span className={styles.validacion}>Este campo es requerido..!</span>}
                     </div>
-                    {/* RESALTAR LA POSIBILIDAD DE USAR UN CODIGO QR QUE PERMITA ACCEDER A UN APARTADO EN EL QUE SE PUEDA CARGAR IMAGENES MEDIANTE EL CELULAR*/}
-                    {/* UNA DE LAS MANERAS SERIA: ESCANEAR UN CODIGO QR EN ESTE APARTADO Y QUE A SU VEZ ABRA EN EL NAVEGADOR DEL CELULAR UNA INTERFAZ PARECIDA A LA DE PERSONA*/}
-                    {/* EN ESTA PERMITIRÁ TOMAR MEDIANTE INDICACIONES UNA IMAGEN DEL DOCUMENTO DE MANERA ANVERSA Y REVERSA PARA QUE ESTA SE CARGUE EN UNA SOLA IMAGEN */}
-                    <div className={styles.formgroup}>
-                        <label htmlFor="retcc_img">Imagen del carnet</label>
-                        <div className={styles.imgbox}>
-                            <div className={styles.imgsubox}>
-                                <input type="file" name='retcc_img' id='retcc_img' onChange={handleFileChange}/>
-                                {errors.retcc_img && <span className={styles.validacion}>Este campo es requerido..!</span>}
-                                <small className=''>
-                                    {imagenRetcc ? `Archivo seleccionado: ${imagenRetcc.name}` : `No existe imagen Seleccionado`}
-                                </small>
-                            </div>
-                            {previewImg && (
-                                <div className={styles.img_prev_box}>
-                                    <img src={previewImg} alt="vista previa" className='img-preview'/>
-                                    <button type='button' className={styles.btnDelete} onClick={removeImg}>
-                                        Eliminar Imagen
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                        
-                    </div>
                     <div className={styles.formgroup}>
                         <label htmlFor="retcc_estado">Estado del carnet</label>
                         <select name="retcc_estado" id="retcc_estado" {...register("retcc_estado",{required: true})}>
@@ -256,9 +301,83 @@ export function CrudPcampo(){
                         </select>
                         {errors.retcc_estado && <span className={styles.validacion}>Este campo es requerido..!</span>}
                     </div>
+                    {/* RESALTAR LA POSIBILIDAD DE USAR UN CODIGO QR QUE PERMITA ACCEDER A UN APARTADO EN EL QUE SE PUEDA CARGAR IMAGENES MEDIANTE EL CELULAR*/}
+                    {/* UNA DE LAS MANERAS SERIA: ESCANEAR UN CODIGO QR EN ESTE APARTADO Y QUE A SU VEZ ABRA EN EL NAVEGADOR DEL CELULAR UNA INTERFAZ PARECIDA A LA DE PERSONA*/}
+                    {/* EN ESTA PERMITIRÁ TOMAR MEDIANTE INDICACIONES UNA IMAGEN DEL DOCUMENTO DE MANERA ANVERSA Y REVERSA PARA QUE ESTA SE CARGUE EN UNA SOLA IMAGEN */}
+                    <div className={styles.formgroup}>
+                        <label htmlFor="retcc_img">Imagen del carnet</label>
+                        <div className={styles.imgbox}>
+                            <div className={styles.imgsubox}>
+                                <input type="file" name='retcc_img' id='retcc_img' accept='image/*' onChange={(e) => handleFileChangeHelper(e, setImgFileRetcc, setPreviewImgRetcc)}/>
+                                {errors.retcc_img && <span className={styles.validacion}>Este campo es requerido..!</span>}
+                                <small className=''>
+                                    {imgFileRetcc ? `Archivo seleccionado: ${imgFileRetcc.name}` : `No existe imagen Seleccionado`}
+                                </small>
+                            </div>
+                            {previewImgRetcc && (
+                                <div className={styles.img_prev_box}>
+                                    <img src={previewImgRetcc} alt="vista previa" className='img-preview'/>
+                                    <button type='button' className={styles.btnDelete} onClick={() => handleRemoveImageHelper(setImgFileRetcc, setPreviewImgRetcc, 'create_retcc_img')}>
+                                        Eliminar Imagen
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {selectedGremioNombreLower.includes('casa') && (
+                        <>
+                            <hr className={styles.separator} />
+                            <h4>Datos Especificos (casa)</h4>
+                            <div className={styles.formgroup}>
+                                <label htmlFor="srecomendado_id">Staff que recomienda</label>
+                                <select id="srecomendado_id" {...register("srecomendado_id")}>
+                                    <option value="">Seleccione (Opcional)...</option>
+                                    {staff.map(s => <option key={s.id} value={s.id}>{s.user?.username} ({s.personal?.nombre} {s.personal?.a_paterno})</option>)}
+                                </select>
+                            </div>
+                            <div className={styles.formgroup}>
+                                <label htmlFor="ruc">RUC *</label>
+                                <input type="text" id="ruc" maxLength="11" {...register("ruc", { required: selectedGremioNombreLower.includes('casa') ? "RUC requerido para CASA" : false })} />
+                                {errors.ruc && <span className={styles.validacion}>{errors.ruc.message}</span>}
+                            </div>
+                            <div className={styles.formgroup}>
+                                <label htmlFor="c_sol">Clave SOL *</label>
+                                <input type="text" id="c_sol" maxLength="50" {...register("c_sol", { required: selectedGremioNombreLower.includes('casa') ? "Clave SOL requerida para CASA" : false })} />
+                                {errors.c_sol && <span className={styles.validacion}>{errors.c_sol.message}</span>}
+                            </div>
+                        </>
+                    )}
+                    
+                    {selectedGremioNombreLower.includes('sindicato') && (
+                        <>
+                            <hr className={styles.separator} />
+                            <h4>Datos Especificos (Sindicato)</h4>
+                            <div className={styles.formgroup}>
+                                <label htmlFor="sdni_img_hijo">Imagen DNI Hijo</label>
+                                <div className={styles.imgbox}>
+                                     <div className={styles.imgsubox}>
+                                        <input type="file" id="sdni_img_hijo" accept="image/*"
+                                               onChange={(e) => handleFileChangeHelper(e, setImgFileDniHijo, setPreviewImgDniHijo)} />
+                                         <small>{imgFileDniHijo ? `Nuevo: ${imgFileDniHijo.name}` : 'No hay imagen'}</small>
+                                    </div>
+                                    {previewImgDniHijo && (
+                                        <div className={styles.img_prev_box}>
+                                             <img src={previewImgDniHijo} alt="DNI Hijo" className='img-preview' />
+                                            <button type='button' className={styles.btnDelete} onClick={() => handleRemoveImageHelper(setImgFileDniHijo, setPreviewImgDniHijo, 'create_sindicato_dni_img_hijo')}>
+                                                Eliminar Imagen
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     <div className={`${styles.formgroup} btn-guardar`}>
-                        <button className={styles.btnguardar}>Guardar</button>
+                        <button type='submit' className={styles.btnguardar} disabled={loading}>
+                            {loading ? 'Cargando...' : 'Registrar Personal de Campo'}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -282,26 +401,24 @@ export function CrudPcampo(){
                             {sortedPcampo.map(pcampo => (
                                 <tr key={pcampo.id} className="border-b border-gray-500 hover:bg-emerald-100 py-4">
                                     <td className='py-3 px-2'>{pcampo.id}</td>
-                                    <td className='py-3 px-2'>{pcampo.personal?.nombre}</td>
-                                    <td className='py-3 px-2'>{pcampo.gremio?.nombre}</td>
-                                    <td className='py-3 px-2'>{pcampo.rango?.nombre}</td>
+                                    <td className='py-3 px-2'>{pcampo.personal?.nombre} {pcampo.personal?.a_paterno}</td>
+                                    <td className='py-3 px-2'>{pcampo.gremio?.nombre || 'N/A'}</td>
+                                    <td className='py-3 px-2'>{pcampo.rango?.nombre || 'N/A'}</td>
                                     <td className='py-3 px-2'>{pcampo.retcc_estado}</td>
                                     <td className='py-3 flex justify-center'>
-                                        <div className=''>
-                                            <button className="edit-btn hover:bg-teal-500" onClick={() => handleSelectedClick(pcampo)} key={pcampo.id}>EDITAR</button>
-                                        </div>
-                                        <div className=''>
-                                            <button onClick={async() => {
-                                                const accepted = window.confirm('Estas seguro de eliminar este personal de campo?')
-                                                if(accepted){
+                                        <button className="edit-btn hover:bg-teal-500" onClick={() => handleSelectedClick(pcampo)}>EDITAR</button>
+                                        <button onClick={async() => {
+                                            if(window.confirm(`Estas seguro de eliminar este personal de campo? ${pcampo.personal?.nombre}`)){
+                                                try{
                                                     await deletepcampo(pcampo.id)
                                                     toast.success('Personal de campo Eliminado');
-                                                    setTimeout(() =>{
-                                                        navigate(0)
-                                                    }, 500)
+                                                    loadData();
+                                                }catch (error){
+                                                    console.error("Error eliminando Pcampo:", error)
+                                                    toast.error("No se pudo eliminar.");
                                                 }
-                                            }} id='eliminarpcampo' name='eliminarpcampo' className="delete-btn hover:bg-red-400">ELIMINAR</button>
-                                        </div>
+                                            }
+                                        }} id='eliminarpcampo' name='eliminarpcampo' className="delete-btn hover:bg-red-400">ELIMINAR</button>
                                     </td>
                                 </tr>
                             ))}
@@ -313,7 +430,7 @@ export function CrudPcampo(){
                 )}
                 
                 {selected && (
-                    <EditPcampo pcampo={selected} onClose={() => setSelected(null)} onPcampoUpdated={handlePcampoUpdated} gremios={gremio} rangos={rango}/>
+                    <EditPcampo pcampo={selected} onClose={() => setSelected(null)} onPcampoUpdated={handlePcampoUpdated} gremios={gremio} rangos={rango} allStaff={staff}/>
                 )}
             </div>
 
@@ -322,55 +439,89 @@ export function CrudPcampo(){
 
 }
 
-function EditPcampo({pcampo, onClose, gremios = [], rangos = [], onPcampoUpdated}){
-    const {register, handleSubmit, formState:{errors}, setValue, watch} = useForm();
-    const [previewImg, setPreviewImg] = useState(null);
+function EditPcampo({pcampo, onClose, gremios = [], rangos = [], allStaff = [], onPcampoUpdated}){
+    const {register, handleSubmit, formState:{errors}, setValue, watch, control} = useForm();
+    const [previewImgRetcc, setPreviewImgRetcc] = useState(null);
+    const [previewImgDniHijo, setPreviewImgDniHijo] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [imgFile, setImgFile] = useState(null);
+    const [imgFileRetcc, setImgFileRetcc] = useState(null);
+    const [imgFileDniHijo, setImgFileDniHijo] = useState(null);
+
+    const watchedGremioId = watch("gremio_id");
+    const selectedGremio = gremios.find(g => g.id === parseInt(watchedGremioId, 10));
+    const selectedGremioNombreLower = selectedGremio?.nombre.toLowerCase() || '';
+
+
 
     useEffect(() => {
         if(pcampo){
-            setValue('gremio_id', pcampo.gremio?.id || '')
-            setValue('rango_id', pcampo.rango?.id || '')
-            setValue('retcc_estado', pcampo.retcc_estado || '')
+            setValue('gremio_id', pcampo.gremio?.id || '');
+            setValue('rango_id', pcampo.rango?.id || '');
+            setValue('retcc_estado', pcampo.retcc_estado || '');
+            setValue('srecomendado_id', pcampo.srecomendado_info?.id || '');
+            setValue('ruc', pcampo.ruc || '');
+            setValue('c_sol', pcampo.c_sol || '');
 
-            if(pcampo.retcc_img_url){
+            setPreviewImgRetcc(pcampo.retcc_img_url || null);
+            setImgFileDniHijo(pcampo.sdni_img_hijo_url || null);
+
+            setImgFileRetcc(null);
+            setImgFileDniHijo(null);
+            
+            /* if(pcampo.retcc_img_url){
 
                 //POSIBLE DILEMA AQUI ¿LA DIRECCION ES CORRECTA?
 
-                setPreviewImg(pcampo.retcc_img_url)
+                setPreviewImgRetcc(pcampo.retcc_img_url)
             } else {
-                setPreviewImg(null)
+                setPreviewImgRetcc(null)
             }
-            setImgFile(null)
+            setImgFileRetcc(null) */
         }
         
     }, [pcampo, setValue]);
 
-    const handleFileChange = (e) => {
+    const handleFileChangeHelper = (e, setFileState, setPreviewState) => {
+        const file = e.target.files[0];
+        if(file){
+            setFileState(file);
+            const reader = new FileReader();
+            reader.onload = (event) => setPreviewState(event.target.result);
+            reader.readAsDataURL(file);
+        }
+    }
+
+    const handleRemoveImageHelper = (setFileState, setPreviewState, inputId) => {
+        setPreviewState(null);
+        setFileState(null);
+        const fileInput = document.getElementById(inputId);
+        if (fileInput) fileInput.value = null;
+    };
+
+    /* const handleFileChange = (e) => {
         const file = e.target.files[0]
         if(file){
-            setImgFile(file);
+            setImgFileRetcc(file);
             const reader = new FileReader();
             reader.onload = (event) => {
-                setPreviewImg(event.target.result);
+                setPreviewImgRetcc(event.target.result);
             };
             reader.readAsDataURL(file)
         } else{
-            setImgFile(null);
-            setPreviewImg(pcampo.retcc_img_url ? pcampo.retcc_img_url : null)
+            setImgFileRetcc(null);
+            setPreviewImgRetcc(pcampo.retcc_img_url ? pcampo.retcc_img_url : null)
         }
     };
 
     const handleRemoveImg = () => {
-        setPreviewImg(null);
-        setImgFile(null);
+        setPreviewImgRetcc(null);
+        setImgFileRetcc(null);
 
         // OTRO DILEMA, SE BORRA LA IMAGEN ANTERIOR POR MANDAR EL CAMPO VACIO?
 
         const fileInput = document.getElementById('edit_retcc_img');
         if(fileInput) fileInput.value = null;
-    }
+    } */
 
     const onEditSubmit = handleSubmit(async (data) => {
         setIsSubmitting(true);
@@ -380,16 +531,32 @@ function EditPcampo({pcampo, onClose, gremios = [], rangos = [], onPcampoUpdated
         formData.append('rango_id', data.rango_id);
         formData.append('retcc_estado', data.retcc_estado);
 
-        if(imgFile){
-            formData.append('retcc_img', imgFile)
-        } else if(!previewImg && pcampo.retcc_img_url){
+        if (selectedGremioNombreLower.includes('casa')){
+            formData.append('srecomendado_id', data.srecomendado_id || '')
+            formData.append('ruc', data.ruc || '')
+            formData.append('c_sol', data.c_sol || '')
+        }
+
+
+        if(imgFileRetcc){
+            formData.append('retcc_img', imgFileRetcc)
+        } else if(!previewImgRetcc && pcampo.retcc_img_url){
             formData.append('retcc_img', '');
         }
 
-        console.log("FormData a enviar para la actualizacion")
+        if(imgFileDniHijo){
+            formData.append('sdni_img_hijo', imgFileDniHijo)
+        } else if(!previewImgDniHijo && pcampo.sdni_img_hijo_url){
+            formData.append('sdni_img_hijo', '');
+        }
+
+        /* console.log("FormData a enviar para la actualizacion")
         for(let [key, value] of formData.entries()){
             console.log(key, value)
-        }
+        } 
+            O
+            
+        console.log("FormData EDIT:",Object.fromEntries(formData));*/
 
         try{
             await updatepcampo(pcampo.id, formData);
@@ -404,7 +571,9 @@ function EditPcampo({pcampo, onClose, gremios = [], rangos = [], onPcampoUpdated
                 let errorMsg = "Error: ";
                 const errorsData = error.response.data;
                 Object.keys(errorsData).forEach(key => {
-                    errorMsg += `${key}: ${errorsData[key].join ? errorsData[key].join(', ') : errorsData[key]}`
+                    const message = Array.isArray(errorsData[key]) ? errorsData[key].join(', ') : errorsData[key];
+                    errorMsg += `${key}: ${message}`
+                    //errorMsg += `${key}: ${errorsData[key].join ? errorsData[key].join(', ') : errorsData[key]}`
                 });
                 toast.error(errorMsg.trim())
             }
@@ -413,12 +582,12 @@ function EditPcampo({pcampo, onClose, gremios = [], rangos = [], onPcampoUpdated
         }
     });
 
-    if(!pcampo) return null
+    //if(!pcampo) return null
 
     return(
         <div className={styles.modal}>
             <div className={styles.detallepcampo}>
-                <h2>EDITAR PERSONAL DE CAMPO</h2>
+                <h2>EDITAR PERSONAL DE CAMPO <br /> ({pcampo.personal?.nombre} {pcampo.personal?.a_paterno}) </h2>
                 <form onSubmit={onEditSubmit}>
                     <div className={styles.formgroup}>
                         <label htmlFor="gremio_id">Gremio</label>
@@ -441,26 +610,6 @@ function EditPcampo({pcampo, onClose, gremios = [], rangos = [], onPcampoUpdated
                         {errors.rango_id && <span className={styles.validacion}>Este campo es requerido..!</span>}
                     </div>
                     <div className={styles.formgroup}>
-                        <label htmlFor="edit_retcc_img">Imagen del carnet RETCC (opcional)</label>
-                        <div className={styles.imgbox}>
-                            <div className={styles.imgsubox}>
-                                <input type="file" name="edit_retcc_img" id="edit_retcc_img" accept="image/*" onChange={handleFileChange} />
-                                <small>
-                                    {imgFile ? `Nuevo: ${imgFile.name}` : (previewImg ? 'Imagen actual cargada' : 'No hay imagen')}
-                                </small>
-                            </div>
-                            {previewImg && (
-                                <div className={styles.img_prev_box}>
-                                    <img src={previewImg} alt="Vista previa RETCC" className='img-preview' />
-                                    <button type='button' className={styles.btnDelete} onClick={handleRemoveImg}>
-                                        Eliminar Imagen
-                                    </button>
-                                </div>
-                            )}
-
-                        </div>
-                    </div>
-                    <div className={styles.formgroup}>
                         <label htmlFor="retcc_estado">Estado del carnet RETCC</label>
                         <select name="retcc_estado" id="retcc_estado" {...register("retcc_estado", {required: "Seleccione el estado"})}>
                             <option value="">Seleccione...</option>
@@ -470,6 +619,78 @@ function EditPcampo({pcampo, onClose, gremios = [], rangos = [], onPcampoUpdated
                         </select>
                         {errors.retcc_estado && <span className={styles.validacion}>Este campo es requerido..!</span>}
                     </div>
+                    <div className={styles.formgroup}>
+                        <label htmlFor="edit_retcc_img">Imagen del carnet RETCC</label>
+                        <div className={styles.imgbox}>
+                            <div className={styles.imgsubox}>
+                                <input type="file" name="edit_retcc_img" id="edit_retcc_img" accept="image/*" onChange={(e) => handleFileChangeHelper(e, setImgFileRetcc, setPreviewImgRetcc)} />
+                                <small>
+                                    {imgFileRetcc ? `Nuevo: ${imgFileRetcc.name}` : (previewImgRetcc ? 'Imagen actual cargada' : 'No hay imagen')}
+                                </small>
+                            </div>
+                            {previewImgRetcc && (
+                                <div className={styles.img_prev_box}>
+                                    <img src={previewImgRetcc.startsWith('data:') ? previewImgRetcc : `${previewImgRetcc}`} alt="Vista previa RETCC" className='img-preview' />
+                                    <button type='button' className={styles.btnDelete} onClick={() => handleRemoveImageHelper(setImgFileRetcc, setPreviewImgRetcc, 'edit_retcc_img')}>
+                                        Eliminar Imagen
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    {selectedGremioNombreLower.includes('casa') && (
+
+                        <>
+                            <hr className={styles.separator} />
+                            <h4>Datos Especificos (CASA)</h4>
+                            <div className={styles.formgroup}>
+                                <label htmlFor="srecomendado_id">Staff que recomienda</label>
+                                <select id="srecomendado_id" {...register("srecomendado_id")}>
+                                    <option value="">Seleccione (Opcional)...</option>
+                                    {allStaff.map(s => (
+                                        <option key={s.id} value={s.id}>{s.user?.username} ({s.personal?.nombre} {s.personal?.a_paterno})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className={styles.formgroup}>
+                                <label htmlFor="ruc">RUC *</label>
+                                <input type="text" id="ruc" maxLength="11" {...register("ruc", { required: selectedGremioNombreLower.includes('casa') ? "RUC requerido para CASA" : false })} />
+                                {errors.ruc && <span className={styles.validacion}>{errors.ruc.message}</span>}
+                            </div>
+                            <div className={styles.formgroup}>
+                                <label htmlFor="c_sol">Clave SOL *</label>
+                                <input type="text" id="c_sol" maxLength="50" {...register("c_sol", { required: selectedGremioNombreLower.includes('casa') ? "Clave SOL requerida para CASA" : false })} />
+                                {errors.c_sol && <span className={styles.validacion}>{errors.c_sol.message}</span>}
+                            </div>
+                        </>
+
+                    )}
+
+                    {selectedGremioNombreLower.includes('sindicato') && (
+                        <>
+                            <hr className={styles.separator}/>
+                            <h4>Datos Específicos (Sindicato)</h4>
+                            <div className={styles.formgroup}>
+                                <label htmlFor="sdni_img_hijo">Imagen DNI Hijo</label>
+                                <div className={styles.imgbox}>
+                                    <div className={styles.imgsubox}>
+                                        <input type="file" id="sdni_img_hijo" accept="image/*"
+                                               onChange={(e) => handleFileChangeHelper(e, setImgFileDniHijo, setPreviewImgDniHijo)} />
+                                         <small>{imgFileDniHijo ? `Nuevo: ${imgFileDniHijo.name}` : (previewImgDniHijo ? 'Imagen actual' : 'No hay imagen')}</small>
+                                    </div>
+                                    {previewImgDniHijo && (
+                                        <div className={styles.img_prev_box}>
+                                             <img src={previewImgDniHijo.startsWith('data:') ? previewImgDniHijo : `${previewImgDniHijo}`} alt="DNI Hijo" className='img-preview' />
+                                            <button type='button' className={styles.btnDelete} onClick={() => handleRemoveImageHelper(setImgFileDniHijo, setPreviewImgDniHijo, 'sdni_img_hijo')}>
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                {errors.sdni_img_hijo && <span className={styles.validacion}>{errors.sdni_img_hijo.message}</span>}
+                            </div>
+                        </>
+                    )}
                     <div className={styles.modalbtngroup}>
                         <button type='submit' className={styles.saveBtn} disabled={isSubmitting}>
                             {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}

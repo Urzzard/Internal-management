@@ -2,8 +2,8 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import viewsets, status, generics
 from django.shortcuts import render
-from .serializer import PersonalSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, PcasaSerializer, PsubcontratoSerializer, PsindicatoSerializer, GremioSerializer, AdminUserCreateSerrializer, BasicUserSerializer, PersonalInfoBasicaSerializer, AdminUserManagementSerializer
-from .models import Personal, Staff, PCampo, Rango, Pcasa, Psubcontrato, Psindicato, Gremio
+from .serializer import PersonalSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, GremioSerializer, AdminUserCreateSerrializer, BasicUserSerializer, PersonalInfoBasicaSerializer, AdminUserManagementSerializer
+from .models import Personal, Staff, PCampo, Rango, Gremio
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
 
@@ -83,9 +83,14 @@ class GremioView(viewsets.ModelViewSet):
 
 class PCampoView(viewsets.ModelViewSet):
     serializer_class = PCampoSerializer
-    queryset = PCampo.objects.select_related('personal', 'gremio', 'rango').all()
+    queryset = PCampo.objects.select_related('personal', 'gremio', 'rango', 'srecomendado', 'srecomendado__user').all()
     permission_classes = [IsAuthenticated, IsAdminUser]
     parser_classes = [MultiPartParser, FormParser]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
 
     def create(self, request, *args, **kwargs):
         print("Archivos recibidos:", request.FILES)
@@ -109,7 +114,7 @@ class PCampoView(viewsets.ModelViewSet):
         self.perform_update(sr)
         return Response(sr.data)
 
-class PcasaView(viewsets.ModelViewSet):
+""" class PcasaView(viewsets.ModelViewSet):
     serializer_class = PcasaSerializer
     queryset = Pcasa.objects.all()
     permission_classes = [IsAuthenticated, IsAdminUser]
@@ -123,5 +128,5 @@ class PsindicatoView(viewsets.ModelViewSet):
     serializer_class = PsindicatoSerializer
     queryset = Psindicato.objects.all()
     permission_classes = [IsAuthenticated, IsAdminUser]
-
+ """
 

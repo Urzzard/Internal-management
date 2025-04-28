@@ -66,8 +66,16 @@ class PCampo(models.Model):
         max_length=20,
         choices=[('Vigente', 'Vigente'), ('Vencido', 'Vencido'), ('No tiene', 'No tiene')]
     )
+    srecomendado = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True, related_name='recomendados_staff', verbose_name='Personal recomendado por Staff')
+    ruc = models.CharField(max_length=11, null=True, blank=True, verbose_name="RUC Obrero")
+    c_sol = models.CharField(max_length=50, null=True, blank=True, verbose_name="Clave SOL Obrero")
+    sdni_img_hijo = models.ImageField(upload_to='SHdni/', blank=True, null=True, verbose_name="DNI del hijo")
 
-class Pcasa(models.Model):
+    def __str__(self):
+        gremio_nombre = self.gremio.nombre if self.gremio else "Sin Gremio"
+        return f"{self.personal.nombre} {self.personal.a_paterno} - {gremio_nombre}"
+
+""" class Pcasa(models.Model):
     pcampo = models.OneToOneField(PCampo, on_delete=models.CASCADE, related_name='casa_data')
     srecomendado = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True)
     ruc = models.CharField(max_length=10)
@@ -80,5 +88,5 @@ class Psubcontrato(models.Model):
 
 class Psindicato(models.Model):
     pcampo = models.OneToOneField(PCampo, on_delete=models.CASCADE, related_name='sindicato_data')
-    dni_img_hijo = models.ImageField(upload_to='SHdni/', blank=True, null=True)
+    dni_img_hijo = models.ImageField(upload_to='SHdni/', blank=True, null=True) """
 

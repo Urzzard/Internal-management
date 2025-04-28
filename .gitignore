@@ -3,6 +3,8 @@ venv/
 
 #carpeta de medios
 media/dni/
+media/retcc/
+media/SHdni/
 
 # Python
 __pycache__/
