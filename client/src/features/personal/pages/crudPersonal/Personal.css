@@ -315,6 +315,24 @@
         margin: 20px 0px 40px 0px;
         text-decoration: underline;
     }
+    .exportButton{
+        display: flex;
+        justify-content: space-between;
+        background:#0c9c9c;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin: 10px 0px;
+        border: #4b4b4b 1px solid;
+        box-shadow: 2px 2px 2px #4b4b4b;
+
+        svg{
+            margin-left: 5px;
+        }
+    }
+    .exportButton:hover{
+        background: #0ba7a7;
+    }
     table{
         width: 100%;
         text-align: center;

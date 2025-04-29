@@ -207,3 +207,4 @@ SIMPLE_JWT = {
 }
 
 
+CORS_EXPOSE_HEADERS = ['Content-Disposition']

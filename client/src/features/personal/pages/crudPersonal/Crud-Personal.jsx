@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useForm } from 'react-hook-form'
+import React, { useEffect, useState } from "react";
+import { useForm } from 'react-hook-form';
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { getAllPers, createPers, deletePers, updatePers } from "../../api/crud-personal.api";
@@ -7,6 +7,7 @@ import { getDistritos, getPaises, getProvincias, getRegiones } from "../../../..
 import { BaseLayout } from "../../../../components/layout/BaseLayout";
 import './Personal.css'
 import { useAuth } from "../../../../context/AuthContext";
+import api from "../../../../api/axios";
 
 export function CrudPersonal(){
 
@@ -28,6 +29,8 @@ export function CrudPersonal(){
     const [selectedDistrito, setSelectedDistrito] = useState("")
 
     const {user} = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
 
 
     useEffect(() =>{
@@ -156,10 +159,19 @@ export function CrudPersonal(){
 
     const [u, setU] = useState([]);
 
-    useEffect(() =>{
+    useEffect(() => {
+        setLoading(true)
         async function loadU() {
-            const res = await getAllPers();
-            setU(res.data);
+            try{
+                const res = await getAllPers();
+                setU(res.data);
+            }catch(error){
+                console.error("Error loading personal:", error);
+                toast.error("Error al cargar la lista de personal.")
+            } finally{
+                setLoading(false);
+            }
+            
         }
         loadU();
     }, [])
@@ -238,6 +250,51 @@ export function CrudPersonal(){
              })
         }
      }, []) */
+
+     const handleExportPersonalCSV = async () => {
+
+        setExporting(true);
+        toast.loading("Generando CSV...", {id: 'export-toast'});
+
+        try{
+            const response = await api.get('/personal/api-personal/Personal/export-csv/',{
+                responseType: 'blob',
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            let filename = 'personal_export.csv';
+            const contentDisposition = response.headers['content-disposition'];
+            if (contentDisposition){
+                const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/);
+                if(filenameMatch && filenameMatch.length > 1){
+                    filename = filenameMatch[1];
+                }
+            }
+
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click()
+
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.success("CSV generado y descarga iniciada.", {id: 'export-toast'});
+            
+        } catch (error){
+            console.error("Error al exportar CSV:", error.response || error);
+            toast.error("Error al generar el archivo CSV.", {id: 'export-toast'});
+
+            if(error.response?.status === 401 || error.response?.status === 403){
+                toast.error("No tienes permiso para exportar.", {id: 'export-toast'});
+            }
+        } finally {
+            setExporting(false);
+        }
+
+     }
 
 
      return(
@@ -507,13 +564,23 @@ export function CrudPersonal(){
                     </div>
                 )}
                 <div className="mostrar">
+                    {user.is_superuser && (
+                        <button onClick={handleExportPersonalCSV} className="exportButton" title="Exportar lista a CSV" disabled={exporting || loading}>
+                            {exporting ? 'Exportando...' : 'Exportar a CSV'}
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                        </button>
+                    )}
                     <h2> LISTA DE PERSONAL REGISTRADO EN OBRA </h2>
+                    
                     <table className="min-w-ful ">
                         <thead>
                             <tr >
                                 <th className="u-id" onClick={() => handleSort('id')}>ID {sortColumn === 'id' && (sortDir === 'asc' ? '▲' : '▼')}</th>
                                 <th className="u-nombre" onClick={() => handleSort('nombre')}>NOMBRE {sortColumn === 'nombre' && (sortDir === 'asc' ? '▲' : '▼')}</th>
                                 <th className="u-a_paterno" onClick={() => handleSort('a_paterno')}>A. PATERNO {sortColumn === 'a_paterno' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                <th className="u-a_materno" onClick={() => handleSort('a_materno')}>A. MATERNO {sortColumn === 'a_materno' && (sortDir === 'asc' ? '▲' : '▼')}</th>
                                 <th className="u-dni" onClick={() => handleSort('dni')}>DNI {sortColumn === 'dni' && (sortDir === 'asc' ? '▲' : '▼')}</th>
                                 <th className="u-edad" onClick={() => handleSort('edad')}>EDAD {sortColumn === 'edad' && (sortDir === 'asc' ? '▲' : '▼')}</th>
                                 <th className="u-f_ingreso" onClick={() => handleSort('f_ingreso')}>F. INGRESO {sortColumn === 'f_ingreso' && (sortDir === 'asc' ? '▲' : '▼')}</th>
@@ -526,6 +593,7 @@ export function CrudPersonal(){
                                     <td>{u.id}</td>
                                     <td>{u.nombre}</td>
                                     <td>{u.a_paterno}</td>
+                                    <td>{u.a_materno}</td>
                                     <td>{u.dni}</td>
                                     <td>{u.edad}</td>
                                     <td>{u.f_ingreso}</td>

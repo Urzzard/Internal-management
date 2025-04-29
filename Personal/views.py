@@ -6,6 +6,9 @@ from .serializer import PersonalSerializer, StaffSerializer, PCampoSerializer, R
 from .models import Personal, Staff, PCampo, Rango, Gremio
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
+import csv
+from django.http import HttpResponse
+from rest_framework.decorators import action
 
 class AdminUserManagementView(viewsets.ModelViewSet):
     serializer_class = AdminUserManagementSerializer
@@ -54,6 +57,24 @@ class PersonalView(viewsets.ModelViewSet):
         sr.is_valid(raise_exception=True)
         self.perform_update(sr)
         return Response(sr.data)
+    
+    @action(detail=False, methods=['get'], url_path='export-csv')
+    def export_csv(self, request):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="personal_export.csv"'
+
+        writer = csv.writer(response)
+        field_names = [field.name for field in Personal._meta.fields if field.name != 'dni_img']
+        header = field_names
+        writer.writerow(header)
+
+        queryset = self.get_queryset()
+
+        for obj in queryset:
+            row = [getattr(obj, field) for field in field_names]
+            writer.writerow(row)
+        
+        return response
     
 
 class StaffView(viewsets.ModelViewSet):
@@ -113,6 +134,42 @@ class PCampoView(viewsets.ModelViewSet):
         sr.is_valid(raise_exception=True)
         self.perform_update(sr)
         return Response(sr.data)
+    
+    @action(detail=False, methods=['get'], url_path='export-csv')
+
+    def export_csv(self, request):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="pcampo_export.csv"'
+        writer = csv.writer(response)
+
+        header = [
+            'ID PCampo', 'ID Personal', 'Nombre Personal', 'Apellido Personal', 'DNI Personal',
+            'ID Gremio', 'Nombre Gremio', 'ID Rango', 'Nombre Rango',
+            'Estado RETCC', 'RUC (Casa)', 'Clave SOL (Casa)', 'ID Staff Rec.', 'Username Staff Rec.'
+        ]
+        writer.writerow(header)
+
+        queryset = self.get_queryset()
+
+        for obj in queryset:
+            row = [
+                obj.id,
+                obj.personal.id,
+                obj.personal.nombre,
+                obj.personal.a_paterno,
+                obj.personal.dni,
+                obj.gremio.id if obj.gremio else '',
+                obj.gremio.nombre if obj.gremio else '',
+                obj.rango.id if obj.rango else '',
+                obj.rango.nombre if obj.rango else '',
+                obj.retcc_estado,
+                obj.ruc or '', 
+                obj.c_sol or '', 
+                obj.srecomendado.id if obj.srecomendado else '',
+                obj.srecomendado.user.username if obj.srecomendado and obj.srecomendado.user else ''
+            ]
+            writer.writerow(row)
+        return response
 
 """ class PcasaView(viewsets.ModelViewSet):
     serializer_class = PcasaSerializer
