@@ -202,7 +202,7 @@ function EditRango({rango, onClose}){
     return(
         <div className={styles.modal}>
             <div className={styles.detallerango}>
-                <h2>EDITAR RANGO</h2>
+                <h2>EDITANDO RANGO</h2>
                 <form onSubmit={(e) => e.preventDefault()}>
                     <div className={styles.formgroup}>
                         <label htmlFor="nombre">Nombre de Rango:</label><br/>

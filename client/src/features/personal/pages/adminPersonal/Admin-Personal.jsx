@@ -180,12 +180,12 @@ export function AdminPersonal(){
                         <tbody>
                             {sortedStaff.map(staff => (
                                 <tr key={staff.id} className="border-b border-gray-200 hover:bg-gray-50">
-                                    <td>{staff.id}</td>
-                                    <td>{staff.personal?.nombre}</td>
-                                    <td>{staff.personal.a_paterno} {staff.personal.a_materno}</td>
-                                    <td>{staff.personal?.dni}</td>
-                                    <td>{staff.personal?.f_ingreso}</td>
-                                    <td>{staff.personal?.estado}</td>
+                                    <td className='w-24'>{staff.id}</td>
+                                    <td className='w-48'>{staff.personal?.nombre}</td>
+                                    <td className='w-48'>{staff.personal.a_paterno} {staff.personal.a_materno}</td>
+                                    <td className='w-24'>{staff.personal?.dni}</td>
+                                    <td className='w-40'>{staff.personal?.f_ingreso}</td>
+                                    <td className='w-24'>{staff.personal?.estado}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -209,12 +209,12 @@ export function AdminPersonal(){
                         <tbody>
                             {sortedPcampo.map(staff => (
                                 <tr key={staff.id} className="border-b border-gray-200 hover:bg-gray-50">
-                                    <td>{staff.id}</td>
-                                    <td>{staff.personal?.nombre}</td>
-                                    <td>{staff.personal.a_paterno} {staff.personal.a_materno}</td>
-                                    <td>{staff.personal?.dni}</td>
-                                    <td>{staff.personal?.f_ingreso}</td>
-                                    <td>{staff.personal?.estado}</td>
+                                    <td className='w-24'>{staff.id}</td>
+                                    <td className='w-48'>{staff.personal?.nombre}</td>
+                                    <td className='w-48'>{staff.personal.a_paterno} {staff.personal.a_materno}</td>
+                                    <td className='w-24'>{staff.personal?.dni}</td>
+                                    <td className='w-40'>{staff.personal?.f_ingreso}</td>
+                                    <td className='w-24'>{staff.personal?.estado}</td>
                                 </tr>
                             ))}
                         </tbody>

@@ -1,6 +1,11 @@
 
 .pcampoRegister{
     width: 25%;
+    border-radius: 10px;
+    padding: 10px 20px;
+    background: white;
+    border: #4b4b4b solid 1px;
+    box-shadow: 2px 2px 10px #4b4b4b;
 
     h3{
         text-align: center;
@@ -97,14 +102,17 @@ form{
 
 .pcampolist{
     width: 70%;
-    border-left: 1px solid #a5a5a5;
-    padding-left: 10px;
+    border-radius: 10px;
+    padding: 0px 10px 10px 10px;
+    background: white;
+    border: #4b4b4b solid 1px;
+    box-shadow: 2px 2px 10px #4b4b4b;
 
     .rangolisttitle{
         text-align: center;
         font-size: 22px;
         font-weight: bold;
-        margin-bottom: 30px;
+        margin: 30px 0px;
         text-decoration: underline;
     }
 

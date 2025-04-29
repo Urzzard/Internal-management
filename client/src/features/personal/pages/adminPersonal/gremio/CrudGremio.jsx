@@ -209,7 +209,7 @@ function EditGremio({gremio, onClose}){
     return(
         <div className={styles.modal}>
             <div className={styles.detallegremio}>
-                <h2>EDITAR GREMIO</h2>
+                <h2>EDITANDO GREMIO</h2>
                 <form onSubmit={(e) => e.preventDefault()}>
                     <div className={styles.formgroup}>
                         <label htmlFor="nombre">Nombre de Rango:</label><br/>

@@ -50,7 +50,7 @@ function EditUserModal({ user, onClose, onUserUpdated }) {
     return (
         <div className={modalStyles.modal}>
             <div className={modalStyles.modalContent}>
-                <h2>Editar Usuario: {user.username}</h2>
+                <h2>Editando usuario: {user.username}</h2>
                 <form onSubmit={onSubmit}>
                     <div className={modalStyles.formgroup}>
                         <label htmlFor="edit_username">Username</label>

@@ -31,10 +31,12 @@
     }
     .cprincipal{
         margin: 50px 0px;
-        width: 80%;
+        width: 85%;
         display: flex;
         flex-wrap: wrap;
         justify-content: space-around;
+        /*BUENISIMO PARA HACER QUE LAS CAJAS NO AUMENTEN DE TAMAÑO DE ALTURA POR SI ALGUNA CRECE INDIVIDUALMENTE*/
+        align-items: flex-start;
     }
 }
 

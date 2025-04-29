@@ -118,7 +118,7 @@ function EditStaffModal({staff, onClose, onStaffUpdated}){
         <div className={styles.modal}>
             <div className={styles.modalContent}>
                 <h2>Editar Asignacion de Staff</h2>
-                <p>Editando a: {staff.personal?.nombre} {staff.personal?.a_paterno} ({staff.user?.username})</p>
+                <p>Editando a: <b>{staff.personal?.nombre} {staff.personal?.a_paterno} {staff.personal?.a_materno} ({staff.user?.username})</b></p> <br />
                 <form onSubmit={onEditSubmit}>
                     <div className={styles.formgroup}>
                         <label htmlFor="edit_cargo">Cargo del Personal</label>

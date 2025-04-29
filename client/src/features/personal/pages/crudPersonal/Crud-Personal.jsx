@@ -796,7 +796,7 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
     return(
         <div className="modal">
             <div className="detalle-usuario">
-                <h2>EDITAR USUARIO</h2>
+                <h2>EDITANDO USUARIO</h2>
                 <form onSubmit={(e) => e.preventDefault()}>
                     <div className="m-f1">
                         <div className="eu-nombre">
