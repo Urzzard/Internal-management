@@ -62,6 +62,16 @@ h2{
     font-size: 12px;
 }
 
+.pdf-btn{
+    color: #f0f9ee;
+    padding: 5px 8px;
+    background: rgb(68, 131, 247);
+    border: 1px solid;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
 .delete-btn{
     color: #f0f9ee;
     padding: 5px 8px;

@@ -31,6 +31,7 @@ export function CrudPersonal(){
     const {user} = useAuth();
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
+    const [generatingPdf, setGeneratingPdf] = useState(null)
 
 
     useEffect(() =>{
@@ -294,7 +295,35 @@ export function CrudPersonal(){
             setExporting(false);
         }
 
-     }
+    }
+
+    const handleGeneratePdf = async (personalId, personaNombre) => {
+        setGeneratingPdf(personalId);
+        toast.loading(`Generando ficha PDF para ${personaNombre}...`, {id: `pdf-toast-${personalId}`});
+
+        try{
+            const response = await api.get(`/personal/api-personal/Personal/${personalId}/ficha-pdf/`,{
+                responseType: 'blob',
+            });
+
+            const file = new Blob([response.data], {type: 'application/pdf' });
+            const fileURL = URL.createObjectURL(file);
+
+            window.open(fileURL, '_blank');
+            toast.success(`Ficha PDF generada.`, {id: `pdf-toast-${personalId}`})
+        } catch (error){
+            console.error("Error al generar PDF:", error.response || error);
+            toast.error(`Error al generar ficha PDF.`, {id: `pdf-toast-${personalId}`});
+            
+            if(error.response?.status === 401 || error.response?.status === 403){
+                toast.error("Notienes permiso para ver esta ficha.", {id: `pdf-toast-${personalId}`});
+            } else if(error.response?.status === 404) {
+                toast.error("Registro de personal no encontrado.", {id: `pdf-toast-${personalId}`});
+            }
+        } finally {
+            setGeneratingPdf(null);
+        }
+    }
 
 
      return(
@@ -601,6 +630,11 @@ export function CrudPersonal(){
                                         <td className="m-btn">
                                             <div className="edit">
                                                 <button className="edit-btn hover:bg-teal-500" onClick={() => handleSelectedClick(u)} key={u.id}>EDITAR</button> 
+                                            </div>
+                                            <div className="pdf">
+                                                <button className="pdf-btn hover:bg-blue-400" onClick={() => handleGeneratePdf(u.id, `${u.nombre} ${u.a_paterno}`)} title="Generar Ficha PDF" disabled={generatingPdf === u.id}>
+                                                    {generatingPdf === u.id ? 'Generando...' : 'PDF'}
+                                                </button>
                                             </div>
                                             <div className="delete">
                                                 <button onClick={async() => {

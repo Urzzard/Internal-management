@@ -9,6 +9,8 @@ from django.contrib.auth.models import User
 import csv
 from django.http import HttpResponse
 from rest_framework.decorators import action
+from django.template.loader import render_to_string
+from weasyprint import HTML
 
 class AdminUserManagementView(viewsets.ModelViewSet):
     serializer_class = AdminUserManagementSerializer
@@ -75,6 +77,36 @@ class PersonalView(viewsets.ModelViewSet):
             writer.writerow(row)
         
         return response
+    
+    @action(detail=True, methods=['get'], url_path='ficha-pdf')
+    def ficha_pdf(self, request, pk=None):
+        try:
+            personal = self.get_object()
+            pcampo_data = PCampo.objects.filter(personal=personal).select_related('gremio', 'rango', 'srecomendado__user').first()
+            staff_data = Staff.objects.filter(personal=personal).select_related('user').first()
+
+            context = {
+                'personal': personal,
+                'pcampo': pcampo_data,
+                'staff': staff_data,
+                'dni_img_url': request.build_absolute_uri(personal.dni_img.url) if personal.dni_img else None,
+                'retcc_img_url': request.build_absolute_uri(pcampo_data.retcc_img.url) if pcampo_data and pcampo_data.retcc_img else None,
+                'sdni_img_hijo_url': request.build_absolute_uri(pcampo_data.sdni_img_hijo.url) if pcampo_data and pcampo_data.sdni_img_hijo else None,
+            }
+
+            html_string = render_to_string('personal/ficha_personal_template.html', context)
+            html = HTML(string=html_string, base_url=request.build_absolute_uri())
+            pdf_file = html.write_pdf()
+
+            response = HttpResponse(pdf_file, content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="ficha_{personal.dni}_{personal.a_paterno}.pdf"'
+            return response
+
+        except Personal.DoesNotExist:
+            return HttpResponse("Personal no encontrado", status=404)
+        except Exception as e:
+            print(f"Error generando PDF: {e}")
+            return HttpResponse("Error al generar el PDF", status=500)
     
 
 class StaffView(viewsets.ModelViewSet):
