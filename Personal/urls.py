@@ -14,6 +14,10 @@ router.register(r'Psubcontrato', views.PsubcontratoView, 'psubcontrato')
 router.register(r'Psindicato', views.PsindicatoView, 'psindicato') """
 router.register(r'AdminCreateUser', views.AdminUserCreateView, 'admin-create-user')
 router.register(r'AdminManageUsers', views.AdminUserManagementView, 'admin-manage-users')
+router.register(r'Paises', views.PaisViewSet, 'paises')
+router.register(r'Regiones', views.RegionViewSet, 'regiones')
+router.register(r'Provincias', views.ProvinciaViewSet, 'provincias')
+router.register(r'Distritos', views.DistritoViewSet, 'distritos')
 
 urlpatterns = [
     path("api-personal/", include(router.urls)),

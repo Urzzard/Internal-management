@@ -17,25 +17,30 @@
     <h1>Ficha Personal</h1>
     <div class="section">
         <h2>Datos Personales</h2>
-        <p><span class="label">Nombre Completo:</span> <span class="value">{{ personal.nombre }} {{ personal.a_paterno }} {{ personal.a_materno }}</span></p>
-        <p><span class="label">DNI:</span> <span class="value">{{ personal.dni }}</span></p>
+        <p><span class="label">Nombre Completo:</span> <span class="value">{{ personal.nombre | default:"" }} {{ personal.a_paterno | default:"" }} {{ personal.a_materno | default:"" }}</span></p>
+        <p><span class="label">DNI:</span> <span class="value">{{ personal.dni | default:"N/A" }}</span></p>
         {% if dni_img_url %}
             <p><span class="label">Imagen DNI:</span></p>
             <img src="{{ dni_img_url }}" alt="DNI">
         {% endif %}
-        <p><span class="label">Fecha Nacimiento:</span> <span class="value">{{ personal.f_nacimiento|date:"d/m/Y" }}</span></p>
-        <p><span class="label">Edad:</span> <span class="value">{{ personal.edad }}</span></p>
-        <p><span class="label">Email:</span> <span class="value">{{ personal.email }}</span></p>
-        <p><span class="label">Celular:</span> <span class="value">{{ personal.celular }}</span></p>
-        <p><span class="label">N° Emergencia:</span> <span class="value">{{ personal.nro_emergencia }}</span></p>
-        <p><span class="label">Dirección:</span> <span class="value">{{ personal.direccion }}</span></p>
-        <p><span class="label">Ubicación:</span> <span class="value">{{ personal.distrito }} / {{ personal.provincia }} / {{ personal.region }} / {{personal.pais.countryName}}</span></p> {# Idealmente tendrías los nombres aquí #}
-        <p><span class="label">Sexo:</span> <span class="value">{{ personal.sexo }}</span></p>
-        <p><span class="label">Estado Civil:</span> <span class="value">{{ personal.e_civil }}</span></p>
-        <p><span class="label">Tallas:</span> <span class="value">Polo: {{ personal.t_polo }}, Pantalón: {{ personal.t_pantalon }}, Zapato: {{ personal.t_zapato }}</span></p>
-        <p><span class="label">Cuentas:</span> <span class="value">Cta: {{ personal.cuenta_corriente }}, CCI: {{ personal.cci }}</span></p>
-        <p><span class="label">Fecha Ingreso:</span> <span class="value">{{ personal.f_ingreso|date:"d/m/Y" }}</span></p>
-        <p><span class="label">Estado Actual:</span> <span class="value">{{ personal.estado }}</span></p>
+        <p><span class="label">Fecha Nacimiento:</span> <span class="value">{{ personal.f_nacimiento|date:"d/m/Y" | default:"N/A" }}</span></p>
+        <p><span class="label">Edad:</span> <span class="value">{{ personal.edad_calculada | default:"N/A" }}</span></p>
+        <p><span class="label">Email:</span> <span class="value">{{ personal.email | default:"N/A" }}</span></p>
+        <p><span class="label">Celular:</span> <span class="value">{{ personal.celular | default:"N/A" }}</span></p>
+        <p><span class="label">N° Emergencia:</span> <span class="value">{{ personal.nro_emergencia | default:"N/A" }}</span></p>
+        <p><span class="label">Dirección:</span> <span class="value">{{ personal.direccion | default:"N/A" }}</span></p>
+
+        <p><span class="label">País:</span> <span class="value">{{ personal.pais.nombre | default:"N/A" }}</span></p>
+        <p><span class="label">Región:</span> <span class="value">{{ personal.region.nombre | default:"N/A" }}</span></p>
+        <p><span class="label">Provincia:</span> <span class="value">{{ personal.provincia.nombre | default:"N/A" }}</span></p>
+        <p><span class="label">Distrito:</span> <span class="value">{{ personal.distrito.nombre | default:"N/A" }}</span></p>
+
+        <p><span class="label">Sexo:</span> <span class="value">{{ personal.sexo | default:"N/A" }}</span></p>
+        <p><span class="label">Estado Civil:</span> <span class="value">{{ personal.e_civil | default:"N/A" }}</span></p>
+        <p><span class="label">Tallas:</span> <span class="value">Polo: {{ personal.t_polo | default:"-" }}, Pantalón: {{ personal.t_pantalon | default:"-" }}, Zapato: {{ personal.t_zapato | default:"-" }}</span></p>
+        <p><span class="label">Cuentas:</span> <span class="value">Cta: {{ personal.cuenta_corriente | default:"N/A" }}, CCI: {{ personal.cci | default:"N/A" }}</span></p>
+        <p><span class="label">Fecha Ingreso:</span> <span class="value">{{ personal.f_ingreso|date:"d/m/Y" | default:"N/A" }}</span></p>
+        <p><span class="label">Estado Actual:</span> <span class="value">{{ personal.estado | default:"N/A" }}</span></p>
     </div>
 
     {% if pcampo %}
@@ -43,7 +48,7 @@
         <h2>Datos de Campo</h2>
         <p><span class="label">Gremio:</span> <span class="value">{{ pcampo.gremio.nombre | default:"N/A" }}</span></p>
         <p><span class="label">Rango:</span> <span class="value">{{ pcampo.rango.nombre | default:"N/A" }}</span></p>
-        <p><span class="label">Estado RETCC:</span> <span class="value">{{ pcampo.retcc_estado }}</span></p>
+        <p><span class="label">Estado RETCC:</span> <span class="value">{{ pcampo.retcc_estado | default:"N/A" }}</span></p>
          {% if retcc_img_url %}
             <p><span class="label">Imagen RETCC:</span></p>
             <img src="{{ retcc_img_url }}" alt="RETCC">
@@ -73,9 +78,9 @@
     {% if staff %}
     <div class="section">
         <h2>Datos de Staff</h2>
-        <p><span class="label">Usuario Sistema:</span> <span class="value">{{ staff.user.username }}</span></p>
-        <p><span class="label">Cargo:</span> <span class="value">{{ staff.cargo }}</span></p>
-        <p><span class="label">Remuneración:</span> <span class="value">S/. {{ staff.rm }}</span></p>
+        <p><span class="label">Usuario Sistema:</span> <span class="value">{{ staff.user.username | default:"N/A" }}</span></p>
+        <p><span class="label">Cargo:</span> <span class="value">{{ staff.cargo | default:"N/A" }}</span></p>
+        <p><span class="label">Remuneración:</span> <span class="value">S/. {{ staff.rm | default:"0.00" }}</span></p>
     </div>
     {% endif %}
 

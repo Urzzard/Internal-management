@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Personal, Staff, PCampo, Rango, Gremio 
+from .models import Personal, Staff, PCampo, Rango, Gremio, Pais, Region, Provincia, Distrito
 from django.contrib.auth.models import User
 
 class BasicUserSerializer(serializers.ModelSerializer):
@@ -53,31 +53,106 @@ class AdminUserCreateSerrializer(serializers.ModelSerializer):
 
         return user
     
+class PaisSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pais
+        fields = ['id', 'nombre', 'codigo', 'geoname_id']
 
+class RegionSerializer(serializers.ModelSerializer):
+    #pais = PaisSerializer(read_only=True)
+    pais_id = serializers.PrimaryKeyRelatedField(queryset=Pais.objects.all(), source='pais')
 
+    class Meta:
+        model = Region
+        fields = ['id', 'nombre', 'geoname_id', 'pais_id']
+
+class ProvinciaSerializer(serializers.ModelSerializer):
+    region_id = serializers.PrimaryKeyRelatedField(queryset=Region.objects.all(), source='region')
+
+    class Meta:
+        model = Provincia
+        fields = ['id', 'nombre', 'geoname_id', 'region_id']
+
+class DistritoSerializer(serializers.ModelSerializer):
+    provincia_id = serializers.PrimaryKeyRelatedField(queryset=Provincia.objects.all(), source='provincia')
+
+    class Meta:
+        model = Distrito
+        fields = ['id', 'nombre', 'geoname_id', 'provincia_id']
 
 class PersonalSerializer(serializers.ModelSerializer):
+    pais_nombre = serializers.CharField(source='pais.nombre', read_only=True, allow_null=True)
+    region_nombre = serializers.CharField(source='region.nombre', read_only=True, allow_null=True)
+    provincia_nombre = serializers.CharField(source='provincia.nombre', read_only=True, allow_null=True)
+    distrito_nombre = serializers.CharField(source='distrito.nombre', read_only=True, allow_null=True)
+
+    pais_id = serializers.PrimaryKeyRelatedField(
+        queryset = Pais.objects.all(), source='pais', write_only=True, required=False, allow_null=True
+    )
+    region_id = serializers.PrimaryKeyRelatedField(
+        queryset = Region.objects.all(), source='region', write_only=True, required=False, allow_null=True
+    )
+    provincia_id = serializers.PrimaryKeyRelatedField(
+        queryset = Provincia.objects.all(), source='provincia', write_only=True, required=False, allow_null=True
+    )
+    distrito_id = serializers.PrimaryKeyRelatedField(
+        queryset = Distrito.objects.all(), source='distrito', write_only=True, required=False, allow_null=True
+    )
+
+    dni_img_url = serializers.ImageField(source='dni_img', read_only=True)
+
+    edad = serializers.IntegerField(source='edad_calculada', read_only= True)
+
     class Meta:
         model = Personal
-        fields = '__all__'
+        fields = [
+             'id', 'nombre', 'a_paterno', 'a_materno', 'dni', 'dni_img_url',
+             'f_nacimiento', 'f_ingreso', 'edad', 'email',
+             'pais_nombre', 'region_nombre', 'provincia_nombre', 'distrito_nombre',
+             'cuenta_corriente', 'cci', 't_zapato', 't_polo', 't_pantalon',
+             'celular', 'nro_emergencia', 'direccion', 'e_civil', 'sexo', 'estado',
+             'dni_img',
+             'pais_id', 'region_id', 'provincia_id', 'distrito_id',
+        ]
+        read_only_fields = [
+            'id', 'dni_img_url', 'pais_nombre', 'region_nombre', 'provincia_nombre', 'distrito_nombre', 'edad'
+        ]
         extra_kwargs = {
-            'dni_img': {'required': False, 'allow_null': True, 'write_only': True}
+            'dni_img': {'required': False, 'allow_null': True, 'write_only': True},
+            'pais_id': {'required': False, 'allow_null': True},
+            'region_id': {'required': False, 'allow_null': True},
+            'provincia_id': {'required': False, 'allow_null': True},
+            'distrito_id': {'required': False, 'allow_null': True},
         }
 
     def update(self, instance, validated_data):
-        if 'dni_img' not in validated_data or validated_data['dni_img'] is None:
-            validated_data['dni_img'] = instance.dni_img
+        image_update_request = self.context['request'].data.get('dni_img')
+        if image_update_request == '':
+            if instance.dni_img:
+                instance.dni_img.delete(save=False)
+            instance.dni_img = None
+            validated_data.pop('dni_img', None)
+        elif isinstance(image_update_request, object) and hasattr(image_update_request, 'read'):
+            pass
+        else:
+            validated_data.pop('dni_img', None)
+        """ if 'dni_img' not in validated_data or validated_data['dni_img'] is None:
+            validated_data['dni_img'] = instance.dni_img """
         return super().update(instance, validated_data)
     
-    def get_dni_img_name(self, obj):
+    """ def get_dni_img_name(self, obj):
         if obj.dni_img:
             return obj.dni_img.name.split('/')[-1]
-        return None
+        return None """
     
 class PersonalInfoBasicaSerializer(serializers.ModelSerializer):
+    distrito_nombre = serializers.CharField(source='distrito.nombre', read_only=True, allow_null=True)
+    provincia_nombre = serializers.CharField(source='provincia.nombre', read_only=True, allow_null=True)
+    edad = serializers.IntegerField(source='edad_calculada', read_only= True)
+
     class Meta:
         model = Personal
-        fields = ['id', 'nombre', 'a_paterno', 'a_materno', 'dni', 'email', 'f_ingreso', 'estado']
+        fields = ['id', 'nombre', 'a_paterno', 'a_materno', 'dni', 'email', 'edad', 'f_ingreso', 'estado', 'distrito_nombre', 'provincia_nombre']
 
 class StaffSerializer(serializers.ModelSerializer):
     user = BasicUserSerializer(read_only=True)

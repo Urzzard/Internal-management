@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import date
 
 # Create your models here.
 
@@ -65,7 +67,7 @@ class Personal(models.Model):
     dni_img = models.ImageField(upload_to='dni/', blank=True, null=True)
     f_nacimiento = models.DateField()
     f_ingreso = models.DateField()
-    edad = models.CharField(max_length=2)
+    #edad = models.CharField(max_length=2)
     email = models.EmailField(max_length=100, blank=True, null=True)
 
     pais = models.ForeignKey(Pais, on_delete=models.SET_NULL, null=True, blank=True, related_name='personal_pais')
@@ -94,6 +96,15 @@ class Personal(models.Model):
         choices=[('Activo', 'Activo'), ('Inactivo', 'Inactivo'), ('Despedido', 'Despedido')]
     )
 
+    @property
+    def edad_calculada(self):
+        if not self.f_nacimiento:
+            return None
+        today = date.today()
+
+        edad = today.year -self.f_nacimiento.year - ((today.month, today.day) < (self.f_nacimiento.month, self.f_nacimiento.day))
+        return edad
+    
     def __str__(self):
         return f"{self.nombre} {self.a_paterno} ({self.dni})"
 

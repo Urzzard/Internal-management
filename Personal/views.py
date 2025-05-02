@@ -1,9 +1,10 @@
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status, generics, filters
+from django_filters.rest_framework import DjangoFilterBackend 
 from django.shortcuts import render
-from .serializer import PersonalSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, GremioSerializer, AdminUserCreateSerrializer, BasicUserSerializer, PersonalInfoBasicaSerializer, AdminUserManagementSerializer
-from .models import Personal, Staff, PCampo, Rango, Gremio
+from .serializer import PersonalSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, GremioSerializer, AdminUserCreateSerrializer, BasicUserSerializer, PersonalInfoBasicaSerializer, AdminUserManagementSerializer, PaisSerializer, RegionSerializer, ProvinciaSerializer, DistritoSerializer
+from .models import Personal, Staff, PCampo, Rango, Gremio, Pais, Region, Provincia, Distrito
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
 import csv
@@ -11,6 +12,39 @@ from django.http import HttpResponse
 from rest_framework.decorators import action
 from django.template.loader import render_to_string
 from weasyprint import HTML
+
+class PaisViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Pais.objects.all()
+    serializer_class = PaisSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+class RegionViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Region.objects.select_related('pais').all()
+    serializer_class = RegionSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['pais']
+    ordering_fields = ['nombre']
+    pagination_class = None
+
+class ProvinciaViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Provincia.objects.select_related('region__pais').all()
+    serializer_class = ProvinciaSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields  = ['region']
+    ordering_fields = ['nombre']
+    pagination_class = None
+
+class DistritoViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Distrito.objects.select_related('provincia__region__pais').all()
+    serializer_class = DistritoSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields  = ['provincia']
+    ordering_fields = ['nombre']
+    pagination_class = None
 
 class AdminUserManagementView(viewsets.ModelViewSet):
     serializer_class = AdminUserManagementSerializer
@@ -34,9 +68,14 @@ class AdminUserCreateView(viewsets.ModelViewSet):
 
 class PersonalView(viewsets.ModelViewSet):
     serializer_class = PersonalSerializer
-    queryset = Personal.objects.all()
+    queryset = Personal.objects.select_related('pais', 'region', 'provincia', 'distrito').all()
     permission_classes = [IsAuthenticated, IsAdminUser]
     parser_classes = [MultiPartParser, FormParser]
+
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['estado', 'sexo', 'e_civil', 'pais', 'region']
+    search_fields = ['nombre', 'a_paterno', 'a_materno', 'dni', 'email']
+    ordering_fields = ['id', 'nombre', 'a_paterno', 'dni', 'f_ingreso', 'estado']
 
     def create(self, request, *args, **kwargs):
         print("Archivos recibidos:", request.FILES)
@@ -62,18 +101,34 @@ class PersonalView(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='export-csv')
     def export_csv(self, request):
-        response = HttpResponse(content_type='text/csv')
+        response = HttpResponse(content_type='text/csv; chatset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="personal_export.csv"'
 
         writer = csv.writer(response)
-        field_names = [field.name for field in Personal._meta.fields if field.name != 'dni_img']
-        header = field_names
+        #field_names = [field.name for field in Personal._meta.fields if field.name != 'dni_img']
+        header = [
+            'ID', 'Nombre', 'A. Paterno', 'A. Materno', 'DNI', 'F. Nacimiento', 'F. Ingreso', 'Edad',
+            'Email', 'Pais', 'Region', 'Provincia', 'Distrito', 'Direccion', ' Cta. Corriente', 'CCI',
+            'T. Zapato', 'T. Polo', 'T. Pantalon', 'Celular', 'N. Emergencia', 'E. Civil', 'Sexo', 'Estado Actual'
+        ]
         writer.writerow(header)
 
         queryset = self.get_queryset()
 
         for obj in queryset:
-            row = [getattr(obj, field) for field in field_names]
+            row = [
+                obj.id, obj.nombre, obj.a_paterno, obj.a_materno, obj.dni,
+                obj.f_nacimiento, obj.f_ingreso, obj.edad_calculada, obj.email or '',
+                obj.pais.nombre if obj.pais else '',
+                obj.region.nombre if obj.region else '',
+                obj.provincia.nombre if obj.provincia else '',
+                obj.distrito.nombre if obj.distrito else '',
+                obj.direccion or '',
+                obj.cuenta_corriente or '', obj.cci or '',
+                obj.t_zapato or '', obj.t_polo or '', obj.t_pantalon or '',
+                obj.celular or '', obj.nro_emergencia or '',
+                obj.e_civil or '', obj.sexo or '', obj.estado
+            ]
             writer.writerow(row)
         
         return response
@@ -82,13 +137,14 @@ class PersonalView(viewsets.ModelViewSet):
     def ficha_pdf(self, request, pk=None):
         try:
             personal = self.get_object()
-            pcampo_data = PCampo.objects.filter(personal=personal).select_related('gremio', 'rango', 'srecomendado__user').first()
-            staff_data = Staff.objects.filter(personal=personal).select_related('user').first()
+            pcampo_data = getattr(personal, 'obrero_info', None)
+            staff_data = getattr(personal, 'staff_info', None)
 
             context = {
                 'personal': personal,
                 'pcampo': pcampo_data,
                 'staff': staff_data,
+
                 'dni_img_url': request.build_absolute_uri(personal.dni_img.url) if personal.dni_img else None,
                 'retcc_img_url': request.build_absolute_uri(pcampo_data.retcc_img.url) if pcampo_data and pcampo_data.retcc_img else None,
                 'sdni_img_hijo_url': request.build_absolute_uri(pcampo_data.sdni_img_hijo.url) if pcampo_data and pcampo_data.sdni_img_hijo else None,
@@ -106,7 +162,7 @@ class PersonalView(viewsets.ModelViewSet):
             return HttpResponse("Personal no encontrado", status=404)
         except Exception as e:
             print(f"Error generando PDF: {e}")
-            return HttpResponse("Error al generar el PDF", status=500)
+            return HttpResponse("Error al generar el PDF: {e}", status=500)
     
 
 class StaffView(viewsets.ModelViewSet):
@@ -136,9 +192,13 @@ class GremioView(viewsets.ModelViewSet):
 
 class PCampoView(viewsets.ModelViewSet):
     serializer_class = PCampoSerializer
-    queryset = PCampo.objects.select_related('personal', 'gremio', 'rango', 'srecomendado', 'srecomendado__user').all()
+    queryset = PCampo.objects.select_related('personal__pais', 'personal__region', 'personal__provincia', 'personal__distrito', 'gremio', 'rango', 'srecomendado__personal', 'srecomendado__user').all()
     permission_classes = [IsAuthenticated, IsAdminUser]
     parser_classes = [MultiPartParser, FormParser]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['gremio', 'rango', 'retcc_estado', 'personal__pais', 'personal__region']
+    search_fields = ['personal__nombre', 'personal__a_paterno', 'personal__dni', 'ruc']
+    ordering_fields = ['id', 'personal__nombre', 'gremio__nombre', 'rango__nombre', 'retcc_estado']
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -168,16 +228,14 @@ class PCampoView(viewsets.ModelViewSet):
         return Response(sr.data)
     
     @action(detail=False, methods=['get'], url_path='export-csv')
-
     def export_csv(self, request):
-        response = HttpResponse(content_type='text/csv')
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="pcampo_export.csv"'
         writer = csv.writer(response)
 
         header = [
-            'ID PCampo', 'ID Personal', 'Nombre Personal', 'Apellido Personal', 'DNI Personal',
-            'ID Gremio', 'Nombre Gremio', 'ID Rango', 'Nombre Rango',
-            'Estado RETCC', 'RUC (Casa)', 'Clave SOL (Casa)', 'ID Staff Rec.', 'Username Staff Rec.'
+            'ID PCampo', 'DNI Personal', 'Nombre Personal', 'Apellido Personal', 'Nombre Gremio',
+            'Nombre Rango', 'Estado RETCC', 'RUC (Casa)', 'Clave SOL (Casa)', 'Username Staff Rec.'
         ]
         writer.writerow(header)
 
@@ -189,15 +247,15 @@ class PCampoView(viewsets.ModelViewSet):
                 obj.personal.id,
                 obj.personal.nombre,
                 obj.personal.a_paterno,
-                obj.personal.dni,
-                obj.gremio.id if obj.gremio else '',
+                #obj.personal.dni,
+                #obj.gremio.id if obj.gremio else '',
                 obj.gremio.nombre if obj.gremio else '',
-                obj.rango.id if obj.rango else '',
+                #obj.rango.id if obj.rango else '',
                 obj.rango.nombre if obj.rango else '',
                 obj.retcc_estado,
                 obj.ruc or '', 
                 obj.c_sol or '', 
-                obj.srecomendado.id if obj.srecomendado else '',
+                #obj.srecomendado.id if obj.srecomendado else '',
                 obj.srecomendado.user.username if obj.srecomendado and obj.srecomendado.user else ''
             ]
             writer.writerow(row)

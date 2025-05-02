@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { getAllPers, createPers, deletePers, updatePers } from "../../api/crud-personal.api";
-import { getDistritos, getPaises, getProvincias, getRegiones } from "../../../../api/info-geografica.api";
+import { getPaises, getRegiones, getProvincias, getDistritos } from "../../../../api/info-geografica.api";
 import { BaseLayout } from "../../../../components/layout/BaseLayout";
 import './Personal.css'
 import { useAuth } from "../../../../context/AuthContext";
@@ -26,12 +26,21 @@ export function CrudPersonal(){
     const [selectedPais, setSelectedPais] = useState("");
     const [selectedRegion, setSelectedRegion] = useState("");
     const [selectedProvincia, setSelectedProvincia] = useState("");
-    const [selectedDistrito, setSelectedDistrito] = useState("")
+    //const [selectedDistrito, setSelectedDistrito] = useState("")
 
     const {user} = useAuth();
     const [loading, setLoading] = useState(true);
+    const [u, setU] = useState([]);
+    const [selected, setSelected] = useState(null)
+    const [visible, setVisible] = useState(false)
+    const [visibleI, setVisibleI] = useState(false)
     const [exporting, setExporting] = useState(false);
     const [generatingPdf, setGeneratingPdf] = useState(null)
+    
+
+    const [imagenDni, setImagenDni] = useState(null);
+    const [previewImg, setPreviewImg] = useState(null);
+    const navigate = useNavigate()
 
 
     useEffect(() =>{
@@ -40,14 +49,21 @@ export function CrudPersonal(){
                 const data = await getPaises();
                 setPais(data);
             } catch (error){
-                console.error("Error loading pais:", error);
+                console.error("Error en componente al cargar paises:", error);
             }
         };
         fetchpais();
     }, []);
 
     useEffect(() => {
-        if (!selectedPais) return;
+        if (!selectedPais) {
+            setRegion([]);
+            setProvincia([]);
+            setDistrito([]);
+            setSelectedRegion("");
+            setSelectedProvincia("");
+            return;
+        } 
 
         const fetchregion = async () => {
             try {
@@ -55,110 +71,56 @@ export function CrudPersonal(){
                 setRegion(data);
                 setProvincia([]);
                 setDistrito([]);
+                setSelectedRegion("");
+                setSelectedProvincia("");
             } catch (error){
-                console.error("Error loading region:", error);
+                console.error("Error en componente al cargar regiones:", error);
             }
         };
         fetchregion();
     }, [selectedPais]);
 
+
     useEffect(() => {
-        if (!selectedRegion) return;
+        if (!selectedRegion) {
+            setProvincia([]);
+            setDistrito([]);
+            setSelectedProvincia("")
+            return;
+        };
 
         const fetchprovincia = async () => {
             try {
                 const data = await getProvincias(selectedRegion);
                 setProvincia(data);
                 setDistrito([]);
+                setSelectedProvincia("")
             } catch (error){
-                console.error("Error loading provincia:", error);
+                console.error("Error en componente al cargar provincias:", error);
             }
         };
         fetchprovincia();
     }, [selectedRegion]);
 
     useEffect(() => {
-        if (!selectedProvincia) return;
+        if (!selectedProvincia) {
+            setDistrito([])
+            return
+        };
 
         const fetchdistrito = async () => {
             try {
                 const data = await getDistritos(selectedProvincia);
                 setDistrito(data);
             } catch (error){
-                console.error("Error loading distrito:", error);
+                console.error("Error en componente al cargar distritos:", error);
             }
         };
         fetchdistrito();
     }, [selectedProvincia]);
 
-    
-
-
-    //PARA CREAR O REGISTRAR DATOS EN LA API
-    const {
-        register, 
-        handleSubmit, 
-        formState:{errors},
-    } = useForm()
-
-    const [imagenDni, setImagenDni] = useState(null);
-    const [previewImg, setPreviewImg] = useState(null);
-    const navigate = useNavigate()
-
-    const onSubmit = handleSubmit(async (data) => {
-        const formData = new FormData();
-
-        Object.keys(data).forEach(key => {
-            formData.append(key, data[key]);
-        });
-        
-
-        if(imagenDni){
-            formData.append("dni_img", imagenDni);
-        } else {
-            toast.error('Debes seleccionar una imagen');
-            return;
-        }
-
-        try{
-            await createPers(formData)
-            toast.success('Usuario Creado')
-            setImagenDni(null);
-            setPreviewImg(null);
-            setTimeout(() =>{
-                navigate(0)
-            }, 700)
-        } catch (error){
-            toast.error('Error al crear usuario!!');
-            console.log(error);
-        }
-
-        
-    })
-
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-
-        if(file){
-            setImagenDni(file);
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setPreviewImg(event.target.result);
-            };
-            reader.readAsDataURL(file);
-        }
-        setImagenDni(file);
-    }
-
-    const removeImg = () =>{
-        setImagenDni(null);
-        setPreviewImg(null);
-    };
-
 
     //PARA CARGAR LOS DATOS DE LA API
-
-    const [u, setU] = useState([]);
 
     useEffect(() => {
         setLoading(true)
@@ -176,11 +138,97 @@ export function CrudPersonal(){
         }
         loadU();
     }, [])
+    
+
+
+    //PARA CREAR O REGISTRAR DATOS EN LA API
+    const {
+        register, 
+        handleSubmit, 
+        formState:{errors},
+        reset: resetCreateForm,
+        watch: watchCreate
+    } = useForm()
+
+
+
+    const onSubmit = handleSubmit(async (data) => {
+        const formData = new FormData();
+
+        Object.keys(data).forEach(key => {
+            if(['pais', 'region', 'provincia', 'distrito'].includes(key) && data[key]){
+                formData.append(`${key}_id`, data[key])
+            } else if(key === 'dni_img'){
+                //
+            } else if(data[key] !== null && data[key] !== undefined){
+                formData.append(key, data[key]);
+            }
+        });
+        
+
+        if(imagenDni){
+            formData.append("dni_img", imagenDni);
+        } else {
+            toast.error('Debes seleccionar una imagen');
+            return;
+        }
+
+        try{
+            await createPers(formData);
+            toast.success('Usuario Creado');
+            setImagenDni(null);
+            setPreviewImg(null);
+            resetCreateForm();
+            setVisible(false);
+            setLoading(true);
+            const res = await getAllPers();
+            setU(res.data);
+            setLoading(false);
+        } catch (error){
+            toast.error('Error al crear usuario!!');
+            console.error("Error creando personal:", error.response?.data || error);
+            if (error.response?.data) {
+                let errorMsg = "Error: ";
+                const errorsData = error.response.data;
+                Object.keys(errorsData).forEach(key => {
+                    const message = Array.isArray(errorsData[key]) ? errorsData[key].join(', ') : errorsData[key];
+                    errorMsg += `${key}: ${message} `;
+                });
+                 toast.error(errorMsg.trim(), { duration: 5000 });
+            }
+        }
+
+        
+    })
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+
+        if(file){
+            setImagenDni(file);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setPreviewImg(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        } else{
+            setImagenDni(null);
+            setPreviewImg(null);
+        }
+        setImagenDni(file);
+    }
+
+    const removeImg = () =>{
+        setImagenDni(null);
+        setPreviewImg(null);
+        const fileInput = document.getElementById('dni_img');
+        if(fileInput) fileInput.value = null;
+    };
 
 
     //PARA EDITAR - ABRIR MODAL
 
-    const [selected, setSelected] = useState(null)
+
 
     const handleSelectedClick = (u) =>{
         setSelected(u)
@@ -189,20 +237,19 @@ export function CrudPersonal(){
 
     //EXTRAS SLIDE DE REGISTRO O IMPORT
 
-    const [visible, setVisible] = useState(false)
-    const [visibleI, setVisibleI] = useState(false)
+
 
     const slide = () => {
         setVisible(!visible);
         if(visibleI){
-            setVisibleI(!visibleI)
+            setVisibleI(false)
         }
     }
 
     const slideI = () => {
         setVisibleI(!visibleI);
         if(visible){
-            setVisible(!visible)
+            setVisible(false)
         }
     }
 
@@ -210,7 +257,7 @@ export function CrudPersonal(){
 
     // ORDEN Y FILTRO
 
-     const [sortColumn, setSortColumn] = useState('');
+     const [sortColumn, setSortColumn] = useState('id');
      const [sortDir, setSortDir] = useState('asc');
  
      const handleSort = (column) => {
@@ -225,14 +272,22 @@ export function CrudPersonal(){
  
  
      const sortedU = [...u].sort((a,b) => {
-         if(sortColumn){
-             const aValue = a[sortColumn]
-             const bValue = b[sortColumn]
- 
-             if(aValue < bValue) return sortDir === 'asc' ? -1 : 1;
-             if(aValue > bValue) return sortDir === 'asc' ? 1 : -1;
- 
+        if (!sortColumn) return 0;
+        const aValue = sortColumn.split('.').reduce((o, k) => (o || {})[k], a);
+        const bValue = sortColumn.split('.').reduce((o, k) => (o || {})[k], b);
+        if (aValue == null && bValue == null) return 0;
+        if (aValue == null) return sortDir === 'asc' ? -1 : 1;
+        if (bValue == null) return sortDir === 'asc' ? 1 : -1;
+        const numA = parseFloat(aValue);
+        const numB = parseFloat(bValue);
+        if (!isNaN(numA) && !isNaN(numB)) {
+             if (numA < numB) return sortDir === 'asc' ? -1 : 1;
+             if (numA > numB) return sortDir === 'asc' ? 1 : -1;
              return 0;
+        }
+         if (typeof aValue === 'string' && typeof bValue === 'string') {
+             const comparison = aValue.localeCompare(bValue, undefined, { sensitivity: 'base' });
+             return sortDir === 'asc' ? comparison : -comparison;
          }
          return 0;
      })
@@ -336,7 +391,7 @@ export function CrudPersonal(){
                 ]}>
                 {user.is_superuser && (
                     <div className="crear">
-                        <h2 onClick={slide} style={{cursor:'pointer'}}>REGISTRAR NUEVO PERSONAL</h2>
+                        <h2 onClick={slide} style={{cursor:'pointer'}}>REGISTRAR NUEVO PERSONAL {visible ? '▲' : '▼'}</h2>
                         {(visible &&
                             <form onSubmit={onSubmit}>
                                 <div className="f1">
@@ -400,13 +455,6 @@ export function CrudPersonal(){
                                         />
                                         {errors.f_nacimiento && <span className="validacion1" >Este campo es requerido!!</span>}
                                     </div>
-                                    <div className="rp-edad">
-                                        <label htmlFor="edad">EDAD:</label>
-                                        <input type="number" name="edad" className="form-control" id="edad" maxLength={2}
-                                            {...register("edad", {required: true})}
-                                        />
-                                        {errors.edad && <span className="validacion1" >Este campo es requerido!!</span>}
-                                    </div>
                                     <div className="rp-celular">
                                         <label htmlFor="celular">Celular:</label>
                                         <input type="number" name="celular" className="form-control" id="celular" maxLength={9}
@@ -426,12 +474,12 @@ export function CrudPersonal(){
                                 <div className="f3">
                                     <div className="rp-pais">
                                         <label htmlFor="pais">Pais:</label>
-                                        <select name="pais" id="pais" className="form-control" value={selectedPais || ""} onChange={(e) => {setSelectedPais(e.target.value)}}
-                                        {...register("pais", { required: true, onChange: (e) => setSelectedPais(e.target.value) })}>
+                                        <select name="pais" id="pais" className="form-control" value={selectedPais}
+                                        {...register("pais", { required: "Pais requerido", onChange: (e) => setSelectedPais(e.target.value) })}>
                                                 <option value="">Seleccione un Pais</option>
                                                 {pais.map((p) => (
-                                                    <option key={p.geonameId} value={p.geonameId}>
-                                                        {p.countryName}
+                                                    <option key={p.id} value={p.id}>
+                                                        {p.nombre}
                                                     </option>
                                                 ))}
                                                 
@@ -441,12 +489,12 @@ export function CrudPersonal(){
 
                                     <div className="rp-region">
                                         <label htmlFor="region">Region:</label>
-                                        <select name="region" id="region" className="form-control" value={selectedRegion || ""} onChange={(e) => {setSelectedRegion(e.target.value)}} disabled={!region.length}
-                                            {...register("region", { required: true, onChange: (e) => setSelectedRegion(e.target.value) })}>
+                                        <select name="region" id="region" className="form-control" value={selectedRegion} disabled={!region.length}
+                                            {...register("region", { required: "Region requerida", onChange: (e) => setSelectedRegion(e.target.value) })}>
                                                 <option value="">Seleccione una Region</option>
                                                 {region.map((r) => (
-                                                    <option key={r.geonameId} value={r.geonameId}>
-                                                        {r.toponymName}
+                                                    <option key={r.id} value={r.id}>
+                                                        {r.nombre}
                                                     </option>
                                                 ))}
                                             
@@ -456,12 +504,12 @@ export function CrudPersonal(){
 
                                     <div className="rp-provincia">
                                         <label htmlFor="provincia">Provincia:</label>
-                                        <select name="provincia" id="provincia" className="form-control" value={selectedProvincia || ""} onChange={(e) => {setSelectedProvincia(e.target.value)}} disabled={!provincia.length}
-                                            {...register("provincia", { required: true, onChange: (e) => setSelectedProvincia(e.target.value) })}>
+                                        <select name="provincia" id="provincia" className="form-control" value={selectedProvincia} disabled={!provincia.length}
+                                            {...register("provincia", { required: "Provincia requerida", onChange: (e) => setSelectedProvincia(e.target.value) })}>
                                                 <option value="">Seleccione una Provincia</option>
                                                 {provincia.map((prov) => (
-                                                    <option key={prov.geonameId} value={prov.geonameId}>
-                                                        {prov.toponymName}
+                                                    <option key={prov.id} value={prov.id}>
+                                                        {prov.nombre}
                                                     </option>
                                                 ))}
                                             
@@ -471,12 +519,12 @@ export function CrudPersonal(){
 
                                     <div className="rp-distrito">
                                         <label htmlFor="distrito">Distrito:</label>
-                                        <select name="distrito" id="distrito" className="form-control" value={selectedDistrito || ""} onChange={(e) => {setSelectedDistrito(e.target.value)}} disabled={!distrito.length}
-                                            {...register("distrito", { required: true, onChange: (e) => setSelectedDistrito(e.target.value) })}>
+                                        <select name="distrito" id="distrito" className="form-control" disabled={!distrito.length}
+                                            {...register("distrito", { required: "Distrito requerido"})}>
                                                 <option value="">Seleccione una Distrito</option>
                                                 {distrito.map((dist) => (
-                                                    <option key={dist.geonameId} value={dist.geonameId}>
-                                                        {dist.toponymName}
+                                                    <option key={dist.id} value={dist.id}>
+                                                        {dist.nombre}
                                                     </option>
                                                 ))}
                                             
@@ -603,190 +651,192 @@ export function CrudPersonal(){
                     )}
                     <h2> LISTA DE PERSONAL REGISTRADO EN OBRA </h2>
                     
-                    <table className="min-w-ful ">
-                        <thead>
-                            <tr >
-                                <th className="u-id" onClick={() => handleSort('id')}>ID {sortColumn === 'id' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                                <th className="u-nombre" onClick={() => handleSort('nombre')}>NOMBRE {sortColumn === 'nombre' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                                <th className="u-a_paterno" onClick={() => handleSort('a_paterno')}>A. PATERNO {sortColumn === 'a_paterno' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                                <th className="u-a_materno" onClick={() => handleSort('a_materno')}>A. MATERNO {sortColumn === 'a_materno' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                                <th className="u-dni" onClick={() => handleSort('dni')}>DNI {sortColumn === 'dni' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                                <th className="u-edad" onClick={() => handleSort('edad')}>EDAD {sortColumn === 'edad' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                                <th className="u-f_ingreso" onClick={() => handleSort('f_ingreso')}>F. INGRESO {sortColumn === 'f_ingreso' && (sortDir === 'asc' ? '▲' : '▼')}</th>
-                                {user.is_superuser && (<th className="u-opciones">OPCIONES</th>)}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sortedU.map(u => (
-                                <tr key={u.id} className="border-b border-gray-500 hover:bg-emerald-100">
-                                    <td>{u.id}</td>
-                                    <td>{u.nombre}</td>
-                                    <td>{u.a_paterno}</td>
-                                    <td>{u.a_materno}</td>
-                                    <td>{u.dni}</td>
-                                    <td>{u.edad}</td>
-                                    <td>{u.f_ingreso}</td>
-                                    {user.is_superuser && (
-                                        <td className="m-btn">
-                                            <div className="edit">
-                                                <button className="edit-btn hover:bg-teal-500" onClick={() => handleSelectedClick(u)} key={u.id}>EDITAR</button> 
-                                            </div>
-                                            <div className="pdf">
-                                                <button className="pdf-btn hover:bg-blue-400" onClick={() => handleGeneratePdf(u.id, `${u.nombre} ${u.a_paterno}`)} title="Generar Ficha PDF" disabled={generatingPdf === u.id}>
-                                                    {generatingPdf === u.id ? 'Generando...' : 'PDF'}
-                                                </button>
-                                            </div>
-                                            <div className="delete">
-                                                <button onClick={async() => {
-                                                    const accepted = window.confirm('Estas seguro de eliminar este Usuario?')
-                                                    if(accepted){
-                                                        await deletePers(u.id)
-                                                        toast.success('Usuario Eliminado');
-                                                        setTimeout(() =>{
-                                                            navigate(0)
-                                                        }, 500)
-                                                    }
-                                                }} id="eliminarusuario" name="eliminarusuario" value="" className="delete-btn hover:bg-red-400">ELIMINAR</button>
-                                            </div>
-                                        </td>
-                                    )}
-                                    
+                    {loading ? <p>Cargando...</p> : (
+                        <table className="min-w-ful ">
+                            <thead>
+                                <tr >
+                                    <th className="u-id" onClick={() => handleSort('id')}>ID {sortColumn === 'id' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                    <th className="u-nombre" onClick={() => handleSort('nombre')}>NOMBRE {sortColumn === 'nombre' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                    <th className="u-a_paterno" onClick={() => handleSort('a_paterno')}>A. PATERNO {sortColumn === 'a_paterno' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                    <th className="u-a_materno" onClick={() => handleSort('a_materno')}>A. MATERNO {sortColumn === 'a_materno' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                    <th className="u-dni" onClick={() => handleSort('dni')}>DNI {sortColumn === 'dni' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                    <th className="u-edad" onClick={() => handleSort('edad')}>EDAD {sortColumn === 'edad' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                    <th className="u-f_ingreso" onClick={() => handleSort('f_ingreso')}>F. INGRESO {sortColumn === 'f_ingreso' && (sortDir === 'asc' ? '▲' : '▼')}</th>
+                                    {user.is_superuser && (<th className="u-opciones">OPCIONES</th>)}
                                 </tr>
-                            ))}
+                            </thead>
+                            <tbody>
+                                {sortedU.map(u => (
+                                    <tr key={u.id} className="border-b border-gray-500 hover:bg-emerald-100">
+                                        <td>{u.id}</td>
+                                        <td>{u.nombre}</td>
+                                        <td>{u.a_paterno}</td>
+                                        <td>{u.a_materno}</td>
+                                        <td>{u.dni}</td>
+                                        <td>{u.edad}</td>
+                                        <td>{u.f_ingreso}</td>
+                                        {user.is_superuser && (
+                                            <td className="m-btn">
+                                                <div className="edit">
+                                                    <button className="edit-btn hover:bg-teal-500" onClick={() => handleSelectedClick(u)} key={u.id}>EDITAR</button> 
+                                                </div>
+                                                <div className="pdf">
+                                                    <button className="pdf-btn hover:bg-blue-400" onClick={() => handleGeneratePdf(u.id, `${u.nombre} ${u.a_paterno}`)} title="Generar Ficha PDF" disabled={generatingPdf === u.id}>
+                                                        {generatingPdf === u.id ? 'Generando...' : 'PDF'}
+                                                    </button>
+                                                </div>
+                                                <div className="delete">
+                                                    <button onClick={async() => {
+                                                        const accepted = window.confirm('Estas seguro de eliminar este Usuario?')
+                                                        if(accepted){
+                                                            await deletePers(u.id)
+                                                            toast.success('Usuario Eliminado');
+                                                            setTimeout(() =>{
+                                                                navigate(0)
+                                                            }, 500)
+                                                        }
+                                                    }} id="eliminarusuario" name="eliminarusuario" value="" className="delete-btn hover:bg-red-400">ELIMINAR</button>
+                                                </div>
+                                            </td>
+                                        )}
+                                        
+                                    </tr>
+                                ))}
+                                
+                            </tbody>
                             
-                        </tbody>
-                        
-                    </table>
+                        </table>
+                    )}
+
+                    
                     
                 </div>
                 </BaseLayout>
             {/* </div> */}
             {selected &&(
-                <EditarUsuario u={selected} onClose={() =>setSelected(null)} pais={pais} region={region} provincia={provincia} distrito={distrito} />
+                <EditarUsuario u={selected} onClose={() =>setSelected(null)} onPersonalUpdated={() => {
+                    setLoading(true);
+                    getAllPers().then(res => setU(res.data)).finally(() => setLoading(false));
+                    setSelected(null)
+                }} />
             )}
         </div>
     )
 }
 
 
-function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovincias, distrito: Idistritos}){
+function EditarUsuario({u, onClose, onPersonalUpdated}){
 
-    const [region, setERegion] = useState(Iregiones || []);
-    const [provincia, setEProvincia] = useState(Iprovincias || []);
-    const [distrito, setEDistrito] = useState(Idistritos || []);
+    const [pais, setPais] = useState([])
+    const [region, setERegion] = useState([]);
+    const [provincia, setEProvincia] = useState([]);
+    const [distrito, setEDistrito] = useState([]);
+    const [loadingGeo, setLoadingGeo] = useState(false);
+    const {
+        register,
+        handleSubmit,
+        formState: {errors},
+        reset,
+        setValue,
+        watch
+    } = useForm()
+
+    const [previewImg, setPreviewImg] = useState(null);
+    const [imgDniFile, setImgDniFile] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const watchedPais = watch("pais_id")
+    const watchedRegion = watch("region_id")
+    const watchedProvincia = watch("provincia_id")
 
     /* console.log("Usuario recibido:", u) */
-    const [formValues, setFormValues] = useState({
-        nombre: u.nombre,
-        a_paterno: u.a_paterno,
-        a_materno: u.a_materno,
-        dni: u.dni,
-        dni_img: u.dni_img,
-        f_nacimiento: u.f_nacimiento,
-        f_ingreso: u.f_ingreso,
-        edad: u.edad,
-        email: u.email,
-        pais: u.pais,
-        region: u.region,
-        provincia: u.provincia,
-        distrito: u.distrito,
-        cuenta_corriente: u.cuenta_corriente,
-        cci: u.cci,
-        t_zapato: u.t_zapato,
-        t_polo: u.t_polo,
-        t_pantalon: u.t_pantalon,
-        celular: u.celular,
-        nro_emergencia: u.nro_emergencia,
-        direccion: u.direccion,
-        e_civil: u.e_civil,
-        sexo: u.sexo,
-        estado: u.estado
-    })
+    useEffect(() => {
+        if(u){
+            const defaultVaues ={
+                nombre: u.nombre || '',
+                a_paterno: u.a_paterno || '',
+                a_materno: u.a_materno || '',
+                dni: u.dni || '',
+                //dni_img: u.dni_img,
+                f_nacimiento: u.f_nacimiento || '',
+                f_ingreso: u.f_ingreso || '',
+                //edad: u.edad || '',
+                email: u.email || '',
+                pais: u.pais?.id || '',
+                region: u.region?.id || '',
+                provincia: u.provincia?.id || '',
+                distrito: u.distrito?.id || '',
+                cuenta_corriente: u.cuenta_corriente || '',
+                cci: u.cci || '',
+                t_zapato: u.t_zapato || '',
+                t_polo: u.t_polo || '',
+                t_pantalon: u.t_pantalon || '',
+                celular: u.celular || '',
+                nro_emergencia: u.nro_emergencia || '',
+                direccion: u.direccion || '',
+                e_civil: u.e_civil || '',
+                sexo: u.sexo || '',
+                estado: u.estado || 'Activo',
+            };
+            reset(defaultVaues);
+            
+            setPreviewImg(u.dni_img_url ? `http://localhost:8000${u.dni_img_url}` : null)
+            setImgDniFile(null)
 
-    const handlePaisChange = async (e) =>{
-        const paisId = e.target.value;
-        setFormValues({
-            ...formValues,
-            pais: paisId,
-            region: '',
-            provincia: '',
-            distrito: ''
-        })
+            setLoadingGeo(true)
+            getPaises().then(data => setPais(data)).catch(err => console.error("Error inicial cargando paises", err)).finally(() => setLoadingGeo(false));
+        }
+    }, [u, reset]);
 
-        if(paisId){
-            try {
-                const data = await getRegiones(paisId);
-                setERegion(data);
-                setEProvincia([]);
-                setEDistrito([]);
-            }catch(error){
-                console.error("Error cargando regiones:", error);
-            }
-        } else{
+    useEffect(() => {
+        if (!watchedPais) {
             setERegion([]);
             setEProvincia([]);
             setEDistrito([]);
+            return;
         }
-    }
-
-    const handleRegionChange = async (e) =>{
-        const regionId = e.target.value;
-        setFormValues({
-            ...formValues,
-            region: regionId,
-            provincia: '',
-            distrito: ''
-        })
-
-        if(regionId){
-            try {
-                const data = await getProvincias(regionId);
-                setEProvincia(data);
-                setEDistrito([]);
-            }catch(error){
-                console.error("Error cargando provincias:", error);
-            }
-        } else{
+        setLoadingGeo(true);
+        getRegiones(watchedPais).then(data => {setERegion(data); setEProvincia([]); setEDistrito([]);}).catch(err => console.error("Error cargando regiones modal", err)).finally(() => setLoadingGeo(false));
+    }, [watchedPais])
+    
+    useEffect(() => {
+        if (!watchedRegion) {
             setEProvincia([]);
             setEDistrito([]);
+            return;
         }
-    }
-
-    const handleProvinciaChange = async (e) =>{
-        const provinciaId = e.target.value;
-        setFormValues({
-            ...formValues,
-            provincia: provinciaId,
-            distrito: ''
-        })
-
-        if(provinciaId){
-            try {
-                const data = await getDistritos(provinciaId);
-                setEDistrito(data);
-            }catch(error){
-                console.error("Error cargando distritos:", error);
-            }
-        } else{
-            setEDistrito([]);
-        }
-    }
-
-    const [previewImg, setPreviewImg] = useState(null);
-
+        setLoadingGeo(true);
+        getProvincias(watchedRegion).then(data => {setEProvincia(data); setEDistrito([]);}).catch(err => console.error("Error cargando provincias modal", err)).finally(() => setLoadingGeo(false));
+    }, [watchedRegion])
+    
     useEffect(() => {
+        if (!watchedProvincia) {
+            setEDistrito([]);
+            return;
+        }
+        setLoadingGeo(true);
+        getDistritos(watchedProvincia).then(data => {setEDistrito(data);}).catch(err => console.error("Error cargando regiones modal", err)).finally(() => setLoadingGeo(false));
+    }, [watchedProvincia])
+    
+
+    /* useEffect(() => {
         if(u.dni_img){
             if(typeof u.dni_img === 'string'){
                 setPreviewImg(`http://localhost:8000${u.dni_img}`)
             }
         }
-    }, [u.dni_img])
+    }, [u.dni_img]) */
 
     const handleInputChange = (e) => {
-        const {name, value, files, type, checked} = e.target;
+        const {name, files} = e.target;
 
-        if(name === 'dni_img' && files && files[0]){
+        if(name === 'dni_img_file' && files && files[0]){
+            const file = files[0];
+            setImgDniFile(file);
             const reader = new FileReader();
+            reader.onload = (event) => setPreviewImg(event.target.result);
+            reader.readAsDataURL(file);
+            /* const reader = new FileReader();
             reader.onload = (event) => {
                 setPreviewImg(event.target.result)
             }
@@ -800,122 +850,97 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
             setFormValues({
                 ...formValues,
                 [name]: value
-            })
+            }) */
         }
     }
 
-    useEffect(() => {
-        const loadInitialData = async () => {
-            if(u.pais){
-                const regiones = await getRegiones(u.pais);
-                setERegion(regiones);
+    const removeEditImg = () => {
+        setPreviewImg(null);
+        setImgDniFile(null);
+        const fileInput = document.getElementById('dni_img');
+        if(fileInput) fileInput.value = null;
+    }
 
-                if(u.region){
-                    const provincias = await getProvincias(u.region);
-                    setEProvincia(provincias);
-
-                    if(u.provincia){
-                        const distritos = await getDistritos(u.provincia);
-                        setEDistrito(distritos);
-                    }
-                }
-            }
-        };
-        loadInitialData();
-    }, [u.pais, u.region, u.provincia])
-
-    useEffect(() => {
-        if(u.pais){
-            const fetchregion = async () => {
-                const data = await getRegiones(u.pais);
-                setERegion(data)
-            };
-            fetchregion();
-        }
-
-        if(u.region){
-            const fetchprovincia = async () => {
-                const data = await getProvincias(u.region);
-                setEProvincia(data)
-            };
-            fetchprovincia();
-        }
-
-        if(u.provincia){
-            const fetchdistrito = async () => {
-                const data = await getDistritos(u.provincia);
-                setEDistrito(data)
-            };
-            fetchdistrito();
-        }
-    }, [u.pais, u.region, u.provincia])
-
-    const handleSubmit2 = async () => {
+    const handleSubmit2 = handleSubmit(async(data) => {
+        setIsSubmitting(true);
         const formData = new FormData();
 
-        Object.keys(formValues).forEach(key => {
-            if(key === 'dni_img'){
-                if(typeof formValues[key] === 'string'){
+        Object.keys(data).forEach(key => {
+            if(key !== 'dni_img' && data[key] !== null && data[key] !== undefined){
+                formData.append(key, data[key] === null ? '' : data[key])
+                /* if(typeof formValues[key] === 'string'){
                     formData.append(key, formValues[key]);
                 }
                 else if(formValues[key] instanceof File){
                     formData.append(key, formValues[key]);
                 }
-                return;
+                return; */
             } 
 
-            if(key === 'loguear'){
+            /* if(key === 'loguear'){
                 formData.append(key, formValues[key] ? 'true' : 'false');
                 return;
             }
-            formData.append(key, formValues[key]);
+            formData.append(key, formValues[key]); */
         })
 
-        for(let [key,value] of formData.entries()){
-            console.log(key,value);
+        if(imgDniFile){
+            formData.append('dni_img', imgDniFile);
+        } else if(!previewImg && u.dni_img_url){
+            formData.append('dni_img', '')
         }
+
+        /* for(let [key,value] of formData.entries()){
+            console.log(key,value);
+        } */
 
         try {
             await updatePers(u.id, formData);
-            onClose();
             toast.success('Editado con exito')
-            setTimeout(() =>{
-                window.location.reload();
-            }, 700)
+            onPersonalUpdated()
         } catch (error) {
             toast.error('Error al actualizar usuario');
-            console.error("Error detallado: ", error);
-            if(error.response){
-                console.error("Datos de respuesta: ", error.response.data)
+            console.error("Error detallado: ", error.response?.data || error);
+            if(error.response?.data){
+                let errorMsg = "Error:";
+                const errorsData = error.response.data;
+                Object.keys(errorsData).forEach(key => {
+                    const message = Array.isArray(errorsData[key]) ? errorsData[key].join(', ') : errorsData[key];
+                    errorMsg += `${key}: ${message} `;
+                });
+                toast.error(errorMsg.trim(), { duration: 5000 });
             }
-            
-        }
-        
-        
-    }
+        } finally{
+            setIsSubmitting(false);
+        }    
+    });
 
 
     return(
         <div className="modal">
             <div className="detalle-usuario">
-                <h2>EDITANDO USUARIO</h2>
-                <form onSubmit={(e) => e.preventDefault()}>
+                <h2>EDITANDO PERSONAL</h2>
+                <form onSubmit={handleSubmit2}>
                     <div className="m-f1">
                         <div className="eu-nombre">
                             <label htmlFor="nombre">Nombre:</label><br/>
-                            <input type="text" name="nombre" className="form-control" id="nombre" value={formValues.nombre} onChange={handleInputChange}/>
+                            <input type="text" name="nombre" className="form-control" id="nombre" {...register("nombre", {required: true})}/>
+                            {errors.nombre && <span className="validacion1">Requerido...</span>}
                         </div> 
                         <div className="eu-a_paterno">
                             <label htmlFor="a_paterno">A. Paterno:</label><br/>
-                            <input type="text" name="a_paterno" className="form-control" id="a_paterno" value={formValues.a_paterno} onChange={handleInputChange}/>
+                            <input type="text" name="a_paterno" className="form-control" id="a_paterno" {...register("a_paterno", {required: true})}/>
+                            {errors.a_paterno && <span className="validacion1">Requerido...</span>}
                         </div> 
                         <div className="eu-a_materno">
                             <label htmlFor="a_materno">A. Materno:</label><br/>
-                            <input type="text" name="a_materno" className="form-control" id="a_materno" value={formValues.a_materno} onChange={handleInputChange}/>
+                            <input type="text" name="a_materno" className="form-control" id="a_materno" {...register("a_materno", {required: true})}/>
+                            {errors.a_materno && <span className="validacion1">Requerido...</span>}
                         </div>
                         <div className="eu-dni">
                             <label htmlFor="dni">DNI:</label><br/>
-                            <input type="number" name="dni" className="form-control" id="dni" value={formValues.dni} onChange={handleInputChange}/>
+                            <input type="number" name="dni" className="form-control" id="dni" {...register("dni", {required: true})}/>
+                            {errors.dni && <span className="validacion1">Requerido...</span>}
                         </div>
                     </div>
 
@@ -926,25 +951,19 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                                 <div className="dni_img_subbox">
                                     <input type="file" name="dni_img" id="dni_img" onChange={handleInputChange}/>
                                     <small className="form-text text-muted">
-                                        {formValues.dni_img && typeof formValues.dni_img === 'string' 
+                                        {/* {formValues.dni_img && typeof formValues.dni_img === 'string' 
                                             ? `Archivo actual: ${formValues.dni_img.split('/').pop()}`
                                             : formValues.dni_img instanceof File 
                                                 ? `Nuevo archivo: ${formValues.dni_img.name}`
-                                                : 'No hay imagen seleccionada'}
+                                                : 'No hay imagen seleccionada'} */}
+                                        {imgDniFile ? `Nuevo: ${imgDniFile.name}` : (previewImg ? 'Imagen actual' : 'Sin Imagen')}
                                     </small>
                                 </div>
                                 
                                 {previewImg && (
                                     <div className="image-preview-container">
                                         <img src={previewImg} alt="Vista previa DNI" className="image-preview"/>
-                                        <button type="button" className="remove-image-btn" onClick={() => {
-                                                setPreviewImg(null);
-                                                setFormValues({
-                                                    ...formValues,
-                                                    dni_img: null
-                                                });
-                                            }}
-                                        >
+                                        <button type="button" className="remove-image-btn" onClick={removeEditImg}>
                                             Eliminar imagen
                                         </button>
                                     </div>
@@ -953,30 +972,34 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                         </div> 
                         <div className="eu-f_nacimiento">
                             <label htmlFor="f_nacimiento">F. Nacimiento:</label><br/>
-                            <input type="date" name="f_nacimiento" className="form-control" id="f_nacimiento" value={formValues.f_nacimiento} onChange={handleInputChange}/>
+                            <input type="date" name="f_nacimiento" className="form-control" id="f_nacimiento" {...register("f_nacimiento", {required: true})}/>
+                            {errors.f_nacimiento && <span className="validacion1">Requerido...</span>}
                         </div>
                         <div className="eu-edad">
-                            <label htmlFor="edad">Edad:</label><br/>
-                            <input type="number" name="edad" className="form-control" id="edad" value={formValues.edad} onChange={handleInputChange}/>
+                            <label htmlFor="edad">Edad (Calculada):</label><br/>
+                            <input type="number" name="edad" className="form-control" id="edad" value={u.edad || ''} readOnly disabled/>
                         </div> 
                     </div>
                     
                     <div className="m-f3">
                         <div className="eu-f_ingreso">
                                 <label htmlFor="f_ingreso">F. Ingreso:</label><br/>
-                                <input type="date" name="f_ingreso" className="form-control" id="f_ingreso" value={formValues.f_ingreso} onChange={handleInputChange}/>
+                                <input type="date" name="f_ingreso" className="form-control" id="f_ingreso" {...register("f_ingreso", {required: true})}/>
+                                {errors.f_ingreso && <span className="validacion1">Requerido...</span>}
                             </div> 
                         
                         <div className="eu-email">
                             <label htmlFor="email">Email:</label><br/>
-                            <input type="text" name="email" className="form-control" id="email" value={formValues.email} onChange={handleInputChange}/>
+                            <input type="text" name="email" className="form-control" id="email" {...register("email", {required: true})}/>
+                            {errors.email && <span className="validacion1">Requerido...</span>}
                         </div>
+                        
                         <div className="eu-pais">
                             <label htmlFor="pais">Pais:</label><br/>
-                            <select name="pais" id="pais" className="form-control" value={formValues.pais} onChange={handlePaisChange}>
+                            <select name="pais" id="pais" className="form-control" {...register("pais_id")} disabled={loadingGeo}>
                                 {pais.map((p) =>(
-                                    <option key={p.geonameId} value={p.geonameId}>
-                                    {p.countryName}
+                                    <option key={p.id} value={p.id}>
+                                    {p.nombre}
                                     </option>
                                 ))}
                             </select>
@@ -986,30 +1009,30 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                     <div className="m-f4">
                         <div className="eu-region">
                             <label htmlFor="region">Region:</label><br/>
-                            <select name="region" id="region" className="form-control" value={formValues.region} onChange={handleRegionChange} disabled={!region.length}>
+                            <select name="region" id="region" className="form-control" {...register("region_id")} disabled={loadingGeo || !region.length}>
                                 {region.map((r) =>(
-                                    <option key={r.geonameId} value={r.geonameId}>
-                                        {r.toponymName}
+                                    <option key={r.id} value={r.id}>
+                                        {r.nombre}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div className="eu-provincia">
                             <label htmlFor="provincia">Provincia:</label><br/>
-                            <select name="provincia" id="provincia" className="form-control" value={formValues.provincia} onChange={handleProvinciaChange} disabled={!provincia.length}>
+                            <select name="provincia" id="provincia" className="form-control" {...register("provincia_id")} disabled={loadingGeo || !provincia.length}>
                                 {provincia.map((prov) =>(
-                                    <option key={prov.geonameId} value={prov.geonameId}>
-                                    {prov.toponymName}
+                                    <option key={prov.id} value={prov.id}>
+                                    {prov.nombre}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div className="eu-distrito">
                             <label htmlFor="distrito">Distrito:</label><br/>
-                            <select name="distrito" id="distrito" className="form-control" value={formValues.distrito} onChange={handleInputChange} disabled={!distrito.length}>
+                            <select name="distrito" id="distrito" className="form-control" {...register("distrito_id")} disabled={loadingGeo || !distrito.length}>
                                 {distrito.map((dist) =>(
-                                    <option key={dist.geonameId} value={dist.geonameId}>
-                                    {dist.toponymName}
+                                    <option key={dist.id} value={dist.id}>
+                                    {dist.nombre}
                                     </option>
                                 ))}
                             </select>
@@ -1019,29 +1042,29 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                     <div className="m-f5">
                         <div className="eu-direccion">
                             <label htmlFor="direccion">Direccion:</label><br/>
-                            <input type="text" name="direccion" className="form-control" id="direccion" value={formValues.direccion} onChange={handleInputChange}/>
+                            <input type="text" name="direccion" className="form-control" id="direccion" {...register("direccion")}/>
                         </div>
                         <div className="eu-celular">
                             <label htmlFor="celular">Celular:</label><br/>
-                            <input type="number" name="celular" className="form-control" id="celular" value={formValues.celular} onChange={handleInputChange}/>
+                            <input type="number" name="celular" className="form-control" id="celular" {...register("celular")}/>
                         </div>
                         <div className="eu-nro_emergencia">
                             <label htmlFor="nro_emergencia">N. Emergencia:</label><br/>
-                            <input type="number" name="nro_emergencia" className="form-control" id="nro_emergencia" value={formValues.nro_emergencia} onChange={handleInputChange}/>
+                            <input type="number" name="nro_emergencia" className="form-control" id="nro_emergencia" {...register("nro_emergencia")}/>
                         </div>
                     </div>
                     
                     <div className="m-f6">
                         <div className="eu-sexo">
                             <label htmlFor="sexo">Sexo:</label><br/>
-                            <select name="sexo" id="sexo" className="form-control" value={formValues.sexo} onChange={handleInputChange}>
+                            <select name="sexo" id="sexo" className="form-control" {...register("sexo")}>
                                 <option value="Masculino">Masculino</option>
                                 <option value="Femenino">Femenino</option>
                             </select>
                         </div>
                         <div className="eu-e_civil">
                             <label htmlFor="e_civil">Estado Civil:</label><br/>
-                            <select name="e_civil" id="e_civil" className="form-control" value={formValues.e_civil} onChange={handleInputChange}>
+                            <select name="e_civil" id="e_civil" className="form-control" {...register("e_civil")}>
                                 <option value="Solter@">Solter@</option>
                                 <option value="Casad@">Casad@</option>
                                 <option value="Divorciad@">Divorciad@</option>
@@ -1050,30 +1073,30 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                         </div>
                         <div className="eu-t_polo">
                             <label htmlFor="t_polo">T.Polo:</label><br/>
-                            <input type="text" name="t_polo" className="form-control" id="t_polo" value={formValues.t_polo} onChange={handleInputChange}/>
+                            <input type="text" name="t_polo" className="form-control" id="t_polo" {...register("t_polo")}/>
                         </div>
                         <div className="eu-t_pantalon">
                             <label htmlFor="t_pantalon">T. Pantalon:</label><br/>
-                            <input type="number" name="t_pantalon" className="form-control" id="t_pantalon" value={formValues.t_pantalon} onChange={handleInputChange}/>
+                            <input type="number" name="t_pantalon" className="form-control" id="t_pantalon" {...register("t_pantalon")}/>
                         </div>
                         <div className="eu-t_zapato">
                             <label htmlFor="t_zapato">T. Zapato:</label><br/>
-                            <input type="number" name="t_zapato" className="form-control" id="t_zapato" value={formValues.t_zapato} onChange={handleInputChange}/>
+                            <input type="number" name="t_zapato" className="form-control" id="t_zapato" {...register("t_zapato")}/>
                         </div>
                     </div>
 
                     <div className="m-f7">
                         <div className="eu-cuenta_corriente">
                             <label htmlFor="cuenta_corriente">Cuenta Corriente:</label><br/>
-                            <input type="number" name="cuenta_corriente" className="form-control" id="cuenta_corriente" value={formValues.cuenta_corriente} onChange={handleInputChange}/>
+                            <input type="number" name="cuenta_corriente" className="form-control" id="cuenta_corriente" {...register("cuenta_corriente")}/>
                         </div> 
                         <div className="eu-cci">
                             <label htmlFor="cci">CCI:</label><br/>
-                            <input type="number" name="cci" className="form-control" id="cci" value={formValues.cci} onChange={handleInputChange}/>
+                            <input type="number" name="cci" className="form-control" id="cci" {...register("cci")}/>
                         </div>
                         <div className="eu-estado">
                             <label htmlFor="estado">Estado:</label><br/>
-                            <select name="estado" id="estado" className="form-control" value={formValues.estado} onChange={handleInputChange}>
+                            <select name="estado" id="estado" className="form-control" {...register("estado", {required: true})}>
                                 <option value="Activo">Activo</option>
                                 <option value="Inactivo">Inactivo</option>
                                 <option value="Despedido">Despedido</option>
@@ -1081,8 +1104,10 @@ function EditarUsuario({u, onClose, pais, region: Iregiones, provincia: Iprovinc
                         </div>
                     </div>
                     <div className="eu-btn">
-                        <button className="edit-btn hover:bg-teal-500" type="button" onClick={handleSubmit2}>GUARDAR CAMBIOS</button>
-                        <button className="cerrar-btn hover:bg-gray-300" onClick={onClose}>CERRAR</button> 
+                        <button className="edit-btn hover:bg-teal-500" type="button" onClick={handleSubmit2}>
+                            {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                        </button>
+                        <button className="cerrar-btn hover:bg-gray-300" onClick={onClose} disabled={isSubmitting}>CERRAR</button> 
                     </div>
                 </form>
             </div>
