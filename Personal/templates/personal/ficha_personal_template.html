@@ -4,25 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ficha Personal - {{personal.nombre}} {{personal.a_paterno}}</title>
+    <link rel="stylesheet" href="./ficha.css">
     <style>
-        body { font-family: sans-serif; margin: 20px; }
-        h1, h2 { color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px;}
-        .section { margin-bottom: 20px; }
-        .label { font-weight: bold; display: inline-block; width: 150px; }
-        .value { display: inline-block; }
-        img { max-width: 200px; max-height: 200px; border: 1px solid #ddd; margin-top: 10px; }
+        body { font-family: sans-serif; margin: 20px; margin: 0; padding: 0;}
+        h1 { color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; text-align: center; font-size: 30px;}
+        h2 { color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-size: 23px;}
+        .section { margin-bottom: 30px; }
+        .img-section{ display: flex; flex-wrap: wrap; justify-content: space-between;}
+        .label { font-weight: bold; display: inline-block; width: 150px; font-size: 14px; }
+        .value { display: inline-block; font-size: 12px;}
+        img { max-width: 350px; max-height: 350px; border: 1px solid #ddd; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <h1>Ficha Personal</h1>
+    <h1>FICHA PERSONAL</h1>
     <div class="section">
         <h2>Datos Personales</h2>
         <p><span class="label">Nombre Completo:</span> <span class="value">{{ personal.nombre | default:"" }} {{ personal.a_paterno | default:"" }} {{ personal.a_materno | default:"" }}</span></p>
         <p><span class="label">DNI:</span> <span class="value">{{ personal.dni | default:"N/A" }}</span></p>
-        {% if dni_img_url %}
+        <!-- {% if dni_img_url %}
             <p><span class="label">Imagen DNI:</span></p>
             <img src="{{ dni_img_url }}" alt="DNI">
-        {% endif %}
+        {% endif %} -->
         <p><span class="label">Fecha Nacimiento:</span> <span class="value">{{ personal.f_nacimiento|date:"d/m/Y" | default:"N/A" }}</span></p>
         <p><span class="label">Edad:</span> <span class="value">{{ personal.edad_calculada | default:"N/A" }}</span></p>
         <p><span class="label">Email:</span> <span class="value">{{ personal.email | default:"N/A" }}</span></p>
@@ -49,10 +52,10 @@
         <p><span class="label">Gremio:</span> <span class="value">{{ pcampo.gremio.nombre | default:"N/A" }}</span></p>
         <p><span class="label">Rango:</span> <span class="value">{{ pcampo.rango.nombre | default:"N/A" }}</span></p>
         <p><span class="label">Estado RETCC:</span> <span class="value">{{ pcampo.retcc_estado | default:"N/A" }}</span></p>
-         {% if retcc_img_url %}
+        <!-- {% if retcc_img_url %}
             <p><span class="label">Imagen RETCC:</span></p>
             <img src="{{ retcc_img_url }}" alt="RETCC">
-        {% endif %}
+        {% endif %} -->
 
         {#{% if pcampo.gremio.nombre|lower|includes:"casa" %}#}
         {% if pcampo.gremio and 'casa' in pcampo.gremio.nombre|lower %}
@@ -63,7 +66,7 @@
         {% endif %}
 
         {#{% if pcampo.gremio.nombre|lower|includes:"sindicato" %}#}
-        {% if pcampo.gremio and 'sindicato' in pcampo.gremio.nombre|lower %}
+        <!-- {% if pcampo.gremio and 'sindicato' in pcampo.gremio.nombre|lower %}
              <h3>Datos Específicos (Sindicato)</h3>
              {% if sdni_img_hijo_url %}
                 <p><span class="label">Imagen DNI Hijo:</span></p>
@@ -71,7 +74,7 @@
              {% else %}
                  <p><span class="label">Imagen DNI Hijo:</span> <span class="value">No registrada</span></p>
              {% endif %}
-        {% endif %}
+        {% endif %} -->
     </div>
     {% endif %}
 
@@ -83,6 +86,38 @@
         <p><span class="label">Remuneración:</span> <span class="value">S/. {{ staff.rm | default:"0.00" }}</span></p>
     </div>
     {% endif %}
+
+    <div class="section">
+        <h2>Documentos Presentados</h2>
+        <div class="img-section">
+            {% if dni_img_url %}
+                <div>
+                    <p><span class="label">Imagen DNI:</span></p>
+                    <img src="{{ dni_img_url }}" alt="DNI">
+                </div>
+            {% endif %}
+            {% if pcampo %}
+                {% if retcc_img_url %}
+                    <div>
+                        <p><span class="label">Imagen RETCC:</span></p>
+                        <img src="{{ retcc_img_url }}" alt="RETCC">
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% if pcampo.gremio and 'sindicato' in pcampo.gremio.nombre|lower %}
+                <div>
+                    <h3>Datos Específicos (Sindicato)</h3>
+                    {% if sdni_img_hijo_url %}
+                        <p><span class="label">Imagen DNI Hijo:</span></p>
+                        <img src="{{ sdni_img_hijo_url }}" alt="DNI Hijo">
+                    {% else %}
+                        <p><span class="label">Imagen DNI Hijo:</span> <span class="value">No registrada</span></p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        
+    </div>
 
     <hr>
     <p style="font-size: 0.8em; text-align: center;">Documento generado el {% now "d/m/Y H:i" %}</p>

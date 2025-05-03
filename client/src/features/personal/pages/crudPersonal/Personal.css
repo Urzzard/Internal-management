@@ -223,7 +223,8 @@
 
             .rp-sexo{
                 width: 10%;
-                input{
+                
+                select{
                     width: 100%;
                 }
             }
@@ -295,7 +296,7 @@
 
             .rp-estado{
                 width: 15%;
-                input{
+                select{
                     width: 100%;
                 }
             }     
