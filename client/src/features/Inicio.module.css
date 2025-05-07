@@ -1,0 +1,13 @@
+.contenedor{
+    width: 85%;
+    margin: 20px auto;
+    border: 1px solid;
+    border-radius: 10px;
+    box-shadow: 2px 2px 2px #4b4b4b;
+    padding: 10px 15px;
+
+    h3{
+        font-size: 20px;
+        font-weight: bold;
+    }
+}

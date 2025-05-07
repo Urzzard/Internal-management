@@ -58,6 +58,7 @@
                 display: flex;
                 justify-content: center;
                 transition: all ease 0.2s;
+                color: #0ba7a7;
             }
             .nav-perfil:hover{
                 border-radius: 100%;
