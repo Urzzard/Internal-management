@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import date
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 
@@ -67,7 +68,6 @@ class Personal(models.Model):
     dni_img = models.ImageField(upload_to='dni/', blank=True, null=True)
     f_nacimiento = models.DateField()
     f_ingreso = models.DateField()
-    #edad = models.CharField(max_length=2)
     email = models.EmailField(max_length=100, blank=True, null=True)
 
     pais = models.ForeignKey(Pais, on_delete=models.SET_NULL, null=True, blank=True, related_name='personal_pais')
@@ -75,88 +75,105 @@ class Personal(models.Model):
     provincia = models.ForeignKey(Provincia, on_delete=models.SET_NULL, null=True, blank=True, related_name='personal_provincia')
     distrito = models.ForeignKey(Distrito, on_delete=models.SET_NULL, null=True, blank=True, related_name='personal_distrito')
 
-    cuenta_corriente = models.CharField(max_length=18)
-    cci = models.CharField(max_length=20)
-    t_zapato = models.CharField(max_length=3)
-    t_polo = models.CharField(max_length=3)
-    t_pantalon = models.CharField(max_length=3)
+    cuenta_corriente = models.CharField(max_length=25, blank=True, null=True)
+    cci = models.CharField(max_length=30, blank=True, null=True)
+    t_zapato = models.CharField(max_length=4, blank=True, null=True)
+    t_polo = models.CharField(max_length=4, blank=True, null=True)
+    t_pantalon = models.CharField(max_length=4, blank=True, null=True)
     celular = models.CharField(max_length=15, blank=True, null=True)
     nro_emergencia = models.CharField(max_length=15, blank=True, null=True)
     direccion = models.CharField(max_length=255, blank=True, null=True)
-    e_civil = models.CharField(
-        max_length=20,
-        choices=[('Solter@', 'Solter@'), ('Casad@', 'Casad@'), ('Divorciad@', 'Divorciad@'), ('Viud@', 'Viud@')]
-    )
-    sexo = models.CharField(
-        max_length=20,
-        choices=[('Masculino', 'Masculino'), ('Femenino', 'Femenino')]
-    )
-    estado = models.CharField(
-        max_length=20,
-        choices=[('Activo', 'Activo'), ('Inactivo', 'Inactivo'), ('Despedido', 'Despedido')]
-    )
+
+    ESTADO_CIVIL_CHOICES = [('Solter@', 'Solter@'), ('Casad@', 'Casad@'), ('Divorciad@', 'Divorciad@'), ('Viud@', 'Viud@'), ('Conviviente', 'Conviviente')]
+    e_civil = models.CharField(max_length=20, choices=ESTADO_CIVIL_CHOICES, blank=True, null=True)
+
+    SEXO_CHOICES = [('Masculino', 'Masculino'), ('Femenino', 'Femenino')]
+    sexo = models.CharField(max_length=20, choices=SEXO_CHOICES)
+
+    ESTADO_PERSONAL_CHOICES = [('Activo', 'Activo'), ('Inactivo', 'Inactivo'), ('Despedido', 'Despedido'), ('Vacaciones', 'Vacaciones')]
+    estado = models.CharField(max_length=20, choices=ESTADO_PERSONAL_CHOICES)
 
     @property
     def edad_calculada(self):
         if not self.f_nacimiento:
             return None
-        today = date.today()
-
-        edad = today.year -self.f_nacimiento.year - ((today.month, today.day) < (self.f_nacimiento.month, self.f_nacimiento.day))
-        return edad
+        today = timezone.localdate()
+        return today.year - self.f_nacimiento.year - ((today.month, today.day) < (self.f_nacimiento.month, self.f_nacimiento.day))
     
     def __str__(self):
         return f"{self.nombre} {self.a_paterno} ({self.dni})"
+    
+    class Meta:
+        verbose_name = "Personal"
+        verbose_name_plural = "Personal"
+        ordering = ['a_paterno', 'a_materno', 'nombre']
 
 class Staff(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
     personal = models.OneToOneField(Personal, on_delete=models.CASCADE, related_name='staff_info')
     cargo = models.CharField(max_length=200)
-    rm = models.DecimalField(max_digits=10, decimal_places=2)
+    rm = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Remuneración Mensual")
+
+    class Meta:
+        verbose_name = "Staff"
+        verbose_name_plural = "Staff"
 
     def __str__(self):
-        return f"{self.user.username} - {self.cargo}"
+        return f"{self.user.username} - {self.personal.a_materno} - {self.cargo}"
 
 class Rango(models.Model):
-    nombre = models.CharField(max_length=50, unique=True)
-    cxh = models.DecimalField(max_digits=10, decimal_places=2)
+    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Rango")
+    cxh = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Costo por Hora Normal (S/.)")
+    descripcion = models.TextField(blank=True, null=True)
+
+    class Meta: 
+        verbose_name = "Rango Laboral"
+        verbose_name_plural = "Rangos Laborales"
+        ordering = ['nombre']
+
+    def __str__(self): 
+        return self.nombre
 
 class Gremio(models.Model):
-    nombre = models.CharField(max_length=50, unique=True)
+    nombre = models.CharField(max_length=100, unique=True)
     responsable = models.CharField(max_length=100)
-    porcentaje = models.DecimalField(max_digits=10, decimal_places=2)
+    descripcion = models.TextField(blank=True, null=True)
+    porcentaje = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0.00), MaxValueValidator(100.00)], blank=True, null=True)
+    incluir_en_cuota = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Gremio"
+        verbose_name_plural = "Gremios"
+        ordering = ['nombre']
+
+    def __str__(self): return self.nombre
 
 class PCampo(models.Model):
     personal = models.OneToOneField(Personal, on_delete=models.CASCADE, related_name='obrero_info')
-    rango = models.ForeignKey(Rango, on_delete=models.SET_NULL, null=True, blank=True)
-    gremio = models.ForeignKey(Gremio, on_delete=models.SET_NULL, null=True, blank=True)
-    retcc_img = models.ImageField(upload_to='retcc/', blank=True, null=True)
-    retcc_estado = models.CharField(
-        max_length=20,
-        choices=[('Vigente', 'Vigente'), ('Vencido', 'Vencido'), ('No tiene', 'No tiene')],
-        default= 'No tiene'
-    )
+    rango = models.ForeignKey(Rango, on_delete=models.PROTECT, related_name="obreros_rango")
+    gremio = models.ForeignKey(Gremio, on_delete=models.PROTECT, related_name="obreros_gremio")
+    ESPECIALIDAD_CHOICES = [
+        ('CAR', 'Carpintería'), ('FIE', 'Fierrería'), ('ALB', 'Albañilería'),
+        ('ELE', 'Electricidad'), ('SAN', 'Sanitario/Gasfitería'), ('PIN', 'Pintura'),
+        ('OPM', 'Operador Maquinaria'), ('AYU', 'Ayudante General'), ('TOP', 'Topografía'),
+        ('GEN', 'General/Peón'), ('VIG', 'Vigía'), ('SOL', 'Soldador'),
+        ('MEC', 'Mecánico'), ('CHO', 'Chófer/Conductor'),
+        ('OTR', 'Otro'),
+    ]
+    especialidad = models.CharField(max_length=3, choices=ESPECIALIDAD_CHOICES, blank=True, null=True)
+
+    retcc_img = models.ImageField(upload_to='retcc/', blank=True, null=True, verbose_name="Imagen Carnet RETCC")
+    ESTADO_RETCC_CHOICES = [('Vigente', 'Vigente'), ('Vencido', 'Vencido'), ('No tiene', 'No tiene'), ('En Tramite', 'En Trámite')]
+    retcc_estado = models.CharField(max_length=20, choices=ESTADO_RETCC_CHOICES, default= 'No tiene')
     srecomendado = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True, related_name='recomendados_staff', verbose_name='Personal recomendado por Staff')
     ruc = models.CharField(max_length=11, null=True, blank=True, verbose_name="RUC Obrero")
     c_sol = models.CharField(max_length=50, null=True, blank=True, verbose_name="Clave SOL Obrero")
     sdni_img_hijo = models.ImageField(upload_to='SHdni/', blank=True, null=True, verbose_name="DNI del hijo")
+    fecha_asignacion = models.DateField(default=timezone.now, verbose_name="Fecha de Asignación a Campo")
+    activo_en_campo = models.BooleanField(default=True, verbose_name="Actualmente Activo en Campo")
 
     def __str__(self):
-        gremio_nombre = self.gremio.nombre if self.gremio else "Sin Gremio"
-        return f"{self.personal.nombre} {self.personal.a_paterno} - {gremio_nombre}"
-
-""" class Pcasa(models.Model):
-    pcampo = models.OneToOneField(PCampo, on_delete=models.CASCADE, related_name='casa_data')
-    srecomendado = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True)
-    ruc = models.CharField(max_length=10)
-    c_sol = models.CharField(max_length=30)
+        return f"{self.personal.nombre} {self.gremio}"
 
 
-class Psubcontrato(models.Model):
-    pcampo = models.OneToOneField(PCampo, on_delete=models.CASCADE, related_name='subcontrato_data')
-
-
-class Psindicato(models.Model):
-    pcampo = models.OneToOneField(PCampo, on_delete=models.CASCADE, related_name='sindicato_data')
-    dni_img_hijo = models.ImageField(upload_to='SHdni/', blank=True, null=True) """
 
