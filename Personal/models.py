@@ -174,6 +174,181 @@ class PCampo(models.Model):
 
     def __str__(self):
         return f"{self.personal.nombre} {self.gremio}"
+    
+    class Meta:
+        verbose_name = "Personal de Campo"
+        verbose_name_plural = "Personal de Campo"
+        ordering = ['personal__a_paterno']
 
+#NEW MODELS
+
+class HorarioTrabajo(models.Model):
+    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Horario")
+    descripcion = models.TextField(blank=True, null=True)
+    hs_dominical = models.DecimalField(max_digits=4, decimal_places=2, default=48.00, verbose_name="Horas semanales para dominical")
+    activo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.nombre
+    
+    class Meta:
+        verbose_name = "Horario de Trabajo"
+        verbose_name_plural = "Horarios de Trabajo"
+
+
+class DetalleDiaHorario(models.Model):
+    class DiaSemana(models.IntegerChoices):
+        LUNES = 0, 'Lunes'
+        MARTES = 1, 'Martes'
+        MIERCOLES = 2, 'Miercoles'
+        JUEVES = 3, 'Jueves'
+        VIERNES = 4, 'Viernes'
+        SABADO = 5, 'Sabado'
+        DOMINGO = 6, 'Domingo'
+
+    horario_trabajo = models.ForeignKey(HorarioTrabajo, on_delete=models.CASCADE, related_name='detalles_dias')
+    dia_semana = models.IntegerField(choices=DiaSemana.choices, verbose_name="Dia de la semana")
+    es_laborable = models.BooleanField(default=True)
+    hora_entrada_teorica = models.TimeField(verbose_name="Hora Entrada Teorica")
+    hora_inicio_tolerancia_entrada = models.TimeField(verbose_name="Inicio Tolerancia Entrada", blank=True, null=True)
+    hora_fin_tolerancia_entrada = models.TimeField(verbose_name="Fin Tolerancia Entrada", blank=True, null=True)
+    hora_inicio_descanso_teorica = models.TimeField(verbose_name="Inicio Descanso Teórico", blank=True, null=True)
+    hora_fin_descanso_teorica = models.TimeField(verbose_name="Fin Descanso Teórico", blank=True, null=True)
+    duracion_descanso_teorico = models.PositiveIntegerField(default=0, verbose_name="Duracion Descanso")
+    hora_salida_teorica = models.TimeField(verbose_name="Hora Salida Teorica")
+    horas_jornada_teorica = models.DecimalField(max_digits=4, decimal_places=2, verbose_name="Horas Jornada Teorica")
+
+    def __str__(self):
+        return f"{self.horario_trabajo.nombre} - {self.get_dia_semana_display()}"
+    
+    class Meta:
+        unique_together = ('horario_trabajo', 'dia_semana')
+        ordering = ['horario_trabajo', 'dia_semana']
+        verbose_name = "Detalle Dia de Horario"
+        verbose_name_plural = "Detalles Dias de Horarios"
+
+    def clean(self):
+        if self.hora_inicio_tolerancia_entrada and self.hora_fin_tolerancia_entrada and self.hora_fin_tolerancia_entrada < self.hora_inicio_tolerancia_entrada:
+            raise models.ValidationError("La hora fin de tolerancia no puede ser anterior a la hora de inicio")
+        
+class AsignacionHorario(models.Model):
+    personal = models.ForeignKey(Personal, on_delete=models.CASCADE, related_name='asignaciones_horario')
+    horario_trabajo = models.ForeignKey(HorarioTrabajo, on_delete=models.PROTECT, related_name='personal_asignado')
+    fecha_inicio = models.DateField(verbose_name="Fecha de Inicio de Asignacion")
+    fecha_fin = models.DateField(verbose_name="Fecha de Fin de Asignacion", blank=True, null=True)
+    activo = models.BooleanField(default=True, help_text="Indica si esta asignación de horario está actualmente vigente.")
+
+    def __str__(self):
+        return f"{self.personal} asignado a {self.horario_trabajo.nombre} desde {self.fecha_inicio}"
+    
+    class Meta:
+        ordering = ['-fecha_inicio', 'personal']
+        verbose_name = "Asignacion de Horario"
+        verbose_name_plural = "Asignaciones de Horarios"
+
+class Marcacion(models.Model):
+    class Tipo(models.TextChoices):
+        ENTRADA = 'ENTRADA', 'Entrada'
+        INICIO_DESCANSO = 'INICIO_DESCANSO', 'Inicio Descanso'
+        FIN_DESCANSO = 'FIN_DESCANSO', 'Fin Descanso'
+        SALIDA = 'SALIDA', 'Salida'
+
+    class Metodo(models.TextChoices):
+        MANUAL_WEB = 'MANUAL_WEB', 'Manual (Sistema Web)'
+        MANUAL_SUPERVISOR = 'MANUAL_SUPERVISOR', 'Manual (Supervisor)'
+        BIOMETRICO_FACIAL = 'BIOMETRICO_FACIAL', 'Biométrico Facial'
+        BIOMETRICO_HUELLA = 'BIOMETRICO_HUELLA', 'Biométrico Huella'
+        TARJETA_RFID = 'TARJETA_RFID', 'Tarjeta RFID/NFC'
+        APP_MOVIL = 'APP_MOVIL', 'App Móvil'
+        SISTEMA = 'SISTEMA', 'Sistema (Automático)'
+
+    personal = models.ForeignKey(Personal, on_delete=models.CASCADE, related_name='marcaciones')
+    fecha_hora_marcada = models.DateTimeField(verbose_name="Fecha y Hora de la Marcacion Original")
+    fecha_hora_efectiva = models.DateTimeField(verbose_name="Fecha y Hora Efectiva (puede ser corregida)")
+    tipo_marcacion = models.CharField(max_length=20, choices=Tipo.choices)
+    metodo_marcacion = models.CharField(max_length=25, choices=Metodo.choices)
+    origen_marcacion = models.CharField(max_length=100, blank=True, null=True, verbose_name="Origen/Dispositivo")
+    foto_evidencia = models.ImageField(upload_to='asistencia/evidencias/%Y/%m/%d/', blank=True, null=True)
+
+    #AUN POR DEFINIR
+    latitud = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
+    longitud = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='marcaciones_creadas')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    editado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='marcaciones_editadas')
+    fecha_edicion = models.DateTimeField(null=True, blank=True)
+    motivo_edicion = models.TextField(blank=True, null=True)
+    es_correccion_manual = models.BooleanField(default=False, help_text="Indica si esta marcación fue ajustada manualmente.")
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.fecha_hora_efectiva:
+            self.fecha_hora_efectiva = self.fecha_hora_marcada
+        if self.pk and self.es_correccion_manual and not self.fecha_edicion:
+            self.fecha_edicion = timezone.now()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.personal} - {self.get_tipo_marcacion_display()} - {self.fecha_hora_efectiva.strftime('%Y-%m-%d %H:%M')}"
+    
+    class Meta:
+        ordering = ['personal', 'fecha_hora_efectiva']
+        verbose_name = "Marcacion de Asistencia"
+        verbose_name_plural = "Marcaciones de Asistencia"
+
+    
+class JornadaLaboral(models.Model):
+    class EstadoMarcaciones(models.TextChoices):
+        COMPLETA = 'COMPLETA', 'Completa'
+        PENDIENTE_ENTRADA = 'PENDIENTE_ENTRADA', 'Pendiente Entrada'
+        PENDIENTE_SALIDA = 'PENDIENTE_SALIDA', 'Pendiente Salida'
+        DESCANSO_INCOMPLETO = 'DESCANSO_INCOMPLETO', 'Descanso Incompleto'
+        REQUIERE_REVISION = 'REQUIERE_REVISION', 'Requiere Revisión Manual'
+
+    class EstadoJornada(models.TextChoices):
+        PROGRAMADA = 'PROGRAMADA', 'Programada'
+        EN_CURSO = 'EN_CURSO', 'En Curso'
+        PRESENTE_COMPLETA = 'PRESENTE_COMPLETA', 'Presente (Completa)'
+        PRESENTE_INCOMPLETA = 'PRESENTE_INCOMPLETA', 'Presente (Marc. Incompleta)'
+        TARDANZA = 'TARDANZA', 'Tardanza'
+        CON_HE_PENDIENTE = 'CON_HE_PENDIENTE', 'Con Horas Extra Pendientes'
+        CON_HE_APROBADA = 'CON_HE_APROBADA', 'Con Horas Extra Aprobadas'
+        AUSENTE_NJ = 'AUSENTE_NJ', 'Ausente (No Justificado)'
+        AUSENTE_J = 'AUSENTE_J', 'Ausente (Justificado)'
+        FALTA_REGISTRADA = 'FALTA_REGISTRADA', 'Falta Registrada'
+        PERMISO_CG = 'PERMISO_CG', 'Permiso (Con Goce)'
+        PERMISO_SG = 'PERMISO_SG', 'Permiso (Sin Goce)'
+        VACACIONES = 'VACACIONES', 'Vacaciones'
+        FERIADO_LABORADO = 'FERIADO_LABORADO', 'Feriado Laborado'
+        FERIADO_NO_LABORADO = 'FERIADO_NO_LABORADO', 'Feriado No Laborado'
+        SUSPENSION = 'SUSPENSION', 'Suspensión'
+
+    personal = models.ForeignKey(Personal, on_delete=models.CASCADE, related_name='jornadas_laborales')
+    fecha = models.DateField()
+    detalle_dia_horario_aplicado = models.ForeignKey(DetalleDiaHorario, on_delete=models.PROTECT, related_name='jornadas_aplicadas')
+    marcacion_entrada = models.OneToOneField(Marcacion, on_delete=models.SET_NULL, related_name='jornada_como_entrada', null=True, blank=True)
+    #RELACION RARA
+    marcacion_inicio_descanso = models.OneToOneField(Marcacion, on_delete=models.SET_NULL, related_name='jornada_como_inicio_descanso', null=True, blank=True)
+    marcacion_fin_descanso = models.OneToOneField(Marcacion, on_delete=models.SET_NULL, related_name='jornada_como_fin_descanso', null=True, blank=True)
+    marcacion_salida = models.OneToOneField(Marcacion, on_delete=models.SET_NULL, related_name='jornada_como_salida', null=True, blank=True)
+    
+    minutos_tardanza_calculados = models.PositiveIntegerField(default=0)
+    horas_normales_calculadas = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    horas_extra_potenciales = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    horas_extra_aprobadas = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+
+    estado_marcaciones = models.CharField(max_length=30, choices=EstadoMarcaciones.choices, default=EstadoMarcaciones.PENDIENTE_ENTRADA)
+    estado_joranada = models.CharField(max_length=30, choices=EstadoJornada.choices, default=EstadoJornada.PROGRAMADA)
+    aplica_dominical_calculado = models.BooleanField(default=False, help_text="Se determina el cierre semanal si cumplio horas.")
+    observaciones_supervisor = models.TextField(blank=True, null=True)
+    es_cerrada = models.BooleanField(default=False, help_text="Indica si la jornada pertenece a una semana ya cerrada.")
+
+    def __str__(self):
+        return f"Jornada de {self.personal} - {self.fecha.strftime('%Y-%m-%d')}"
+    
+    class Meta:
+        unique_together = ('personal', 'fecha')
+        ordering = ['-fecha', 'personal']
+        verbose_name = "Jornada Laboral"
+        verbose_name_plural = "Jornadas Laborales"
 
 
