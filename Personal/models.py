@@ -352,3 +352,90 @@ class JornadaLaboral(models.Model):
         verbose_name_plural = "Jornadas Laborales"
 
 
+class Incidencia(models.Model):
+    class Tipo(models.TextChoices):
+        HORA_EXTRA = 'HORA_EXTRA', 'Solicitud/Aprobación Hora Extra'
+        TARDANZA_JUSTIFICADA = 'TARDANZA_JUSTIFICADA', 'Justificación Tardanza'
+        AUSENCIA_JUSTIFICADA = 'AUSENCIA_JUSTIFICADA', 'Justificación Ausencia'
+        PERMISO_CON_GOCE = 'PERMISO_CG', 'Permiso con Goce de Sueldo'
+        PERMISO_SIN_GOCE = 'PERMISO_SG', 'Permiso sin Goce de Sueldo'
+        AJUSTE_MARCACION = 'AJUSTE_MARCACION', 'Corrección/Ajuste de Marcación'
+        MEMORANDO = 'MEMORANDO', 'Memorando/Llamada de Atención'
+        OTRO = 'OTRO', 'Otro Tipo de Incidencia'
+
+    class EstadoAprobacion(models.TextChoices):
+        PENDIENTE = 'PENDIENTE', 'Pendiente de Revisión'
+        APROBADA = 'APROBADA', 'Aprobada'
+        RECHAZADA = 'RECHAZADA', 'Rechazada'
+        EN_PROCESO = 'EN_PROCESO', 'En Proceso'
+        CERRADA = 'CERRADA', 'Cerrada/Resuelta'
+
+    jornada_laboral = models.ForeignKey(JornadaLaboral, on_delete=models.SET_NULL, null=True, blank=True, related_name='incidencias')
+    personal = models.ForeignKey(Personal, on_delete=models.CASCADE, related_name='incidencias_personales')
+    fecha_incidencia = models.DateField(verbose_name="Fecha de la Incidencia")
+    tipo_incidencia = models.CharField(max_length=30, choices=Tipo.choices)
+    descripcion_solicitud = models.TextField(verbose_name="Descripcion/Motivo de la Solicitud")
+    documento_adjunto = models.FileField(upload_to='asistencia/incidencias_adjuntos/%Y/%m/', blank=True, null=True)
+    
+    fh_inicio_he = models.DateTimeField(null=True, blank=True, verbose_name='Inicio Hora Extra')
+    fh_fin_he = models.DateTimeField(null=True, blank=True, verbose_name="Fin Hora Extra")
+    hs_o_afectadas = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Horas Solicitadas/Afectadas")
+
+    estado_aprobacion = models.CharField(max_length=20, choices=EstadoAprobacion.choices, default=EstadoAprobacion.PENDIENTE)
+    ap_re_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='incidencias_gestionadas')
+    fecha_ap_re = models.DateTimeField(null=True, blank=True)
+    comentarios_aprobacion = models.TextField(blank=True, null=True)
+
+    creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='incidencias_creadas')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.get_tipo_incidencia_display()} para {self.personal} en {self.fecha_incidencia}"
+    
+    class Meta:
+        ordering = ['-fecha_incidencia', '-fecha_creacion']
+        verbose_name = "Incidencia de Asistencia"
+        verbose_name_plural = "Incidencias de Asistencia"
+
+class CalendarioFeriado(models.Model):
+    class TipoFeriado(models.TextChoices):
+        NACIONAL = 'NACIONAL', 'Nacional'
+        REGIONAL = 'REGIONAL', 'Regional'
+        LOCAL = 'LOCAL', 'Local/Provincial'
+        EMPRESA = 'EMPRESA', 'Específico de Empresa'
+
+    fecha = models.DateField(unique=True)
+    descripcion = models.CharField(max_length=255)
+    tipo = models.CharField(max_length=15, choices=TipoFeriado.choices, default=TipoFeriado.NACIONAL)
+    pais = models.ForeignKey(Pais, on_delete=models.CASCADE, null=True, blank=True, help_text="Pais si el feriado es nacional o base para regional/local")
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, null=True, blank=True, help_text="Region si el feriado es regional")
+
+    def __str__(self):
+        return f"{self.fecha.strftime('%Y-%m-%d')} - {self.descripcion} ({self.get_tipo_display()})"
+    
+    class Meta:
+        ordering = ['fecha']
+        verbose_name = "Feriado"
+        verbose_name_plural = "Feriados"
+
+
+class SemanaLaboralCierre(models.Model):
+    ano = models.PositiveBigIntegerField()
+    numero_semana_iso = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(53)], verbose_name="Numero de semana ISO")
+    fecha_inicio_semana = models.DateField()
+    fecha_fin_semana = models.DateField()
+    es_cerrada = models.BooleanField(default=False, verbose_name="Semana Cerrada para Edicion")
+    cerrada_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='semanas_cerradas')
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        estado = "Cerrada" if self.es_cerrada else "Abierta"
+        return f"Semana {self.numero_semana_iso} del {self.ano} ({self.fecha_inicio_semana} al {self.fecha_fin_semana}) | {estado}"
+    
+    class Meta:
+        unique_together = ('ano', 'numero_semana_iso')
+        ordering = ['-ano', '-numero_semana_iso']
+        verbose_name = "Cierre de Semana Laboral"
+        verbose_name_plural = "Cierres de Semanas Laborales"
+        
