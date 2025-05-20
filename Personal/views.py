@@ -172,7 +172,7 @@ class StaffView(viewsets.ModelViewSet):
 
 class EligibleUsersForStaffView(generics.ListAPIView):
     serializer_class = BasicUserSerializer
-    queryset = User.objects.filter(is_staff=True, is_superuser= False, staff__isnull=True)
+    queryset = User.objects.filter(is_staff=True, is_superuser= False, staff_profile__isnull=True)
     permission_classes = [IsAuthenticated, IsAdminUser]
 
 class EligiblePersonalForStaffView(generics.ListAPIView):

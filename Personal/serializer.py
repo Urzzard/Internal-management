@@ -158,10 +158,12 @@ class StaffSerializer(serializers.ModelSerializer):
     user = BasicUserSerializer(read_only=True)
     personal = PersonalInfoBasicaSerializer(read_only=True)
     user_id = serializers.PrimaryKeyRelatedField(
-        queryset = User.objects.filter(is_staff=True, is_superuser=False, staff__isnull=True),
+
+        queryset = User.objects.filter(is_staff=True, is_superuser=False, staff_profile__isnull=True),
         source='user',
         write_only=True,
         label="Usuario del Sistema"
+
     )
 
     personal_id = serializers.PrimaryKeyRelatedField(

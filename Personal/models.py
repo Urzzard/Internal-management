@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import date
 from django.core.validators import MinValueValidator, MaxValueValidator
+from simple_history.models import HistoricalRecords
+
 
 # Create your models here.
 
@@ -19,11 +21,13 @@ class Pais(models.Model):
 
     def __str__(self):
         return self.nombre
+    
+    history = HistoricalRecords()
 
 class Region(models.Model):
     geoname_id = models.IntegerField(unique=True, db_index=True, verbose_name="GeoName ID")
     pais = models.ForeignKey(Pais, on_delete=models.CASCADE, related_name='regiones')
-    nombre = models.CharField(max_length=150, verbose_name="Nombre de ka Region/Departamento")
+    nombre = models.CharField(max_length=150, verbose_name="Nombre de la Region/Departamento")
 
     class Meta:
         verbose_name = "Región/Departamento"
@@ -32,6 +36,8 @@ class Region(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.pais.codigo})"
+    
+    history = HistoricalRecords()
     
 class Provincia(models.Model):
     geoname_id = models.IntegerField(unique=True, db_index=True, verbose_name="GeoName ID")
@@ -46,6 +52,8 @@ class Provincia(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.region.nombre})"
     
+    history = HistoricalRecords()
+    
 class Distrito(models.Model):
     geoname_id = models.IntegerField(unique=True, db_index=True, verbose_name="GeoName ID")
     provincia = models.ForeignKey(Provincia, on_delete=models.CASCADE, related_name='distritos')
@@ -58,6 +66,8 @@ class Distrito(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.provincia.nombre})"
+    
+    history = HistoricalRecords()
 
 
 class Personal(models.Model):
@@ -69,6 +79,7 @@ class Personal(models.Model):
     f_nacimiento = models.DateField()
     f_ingreso = models.DateField()
     email = models.EmailField(max_length=100, blank=True, null=True)
+    rfid_uid = models.CharField(max_length=50, unique=True, blank=True, null=True, verbose_name="UID Tarjeta RFID", db_index=True)
 
     pais = models.ForeignKey(Pais, on_delete=models.SET_NULL, null=True, blank=True, related_name='personal_pais')
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name='personal_region')
@@ -108,6 +119,8 @@ class Personal(models.Model):
         verbose_name_plural = "Personal"
         ordering = ['a_paterno', 'a_materno', 'nombre']
 
+    history = HistoricalRecords()
+
 class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_profile')
     personal = models.OneToOneField(Personal, on_delete=models.CASCADE, related_name='staff_info')
@@ -119,7 +132,9 @@ class Staff(models.Model):
         verbose_name_plural = "Staff"
 
     def __str__(self):
-        return f"{self.user.username} - {self.personal.a_materno} - {self.cargo}"
+        return f"{self.user.username} - {self.personal.nombre} - {self.personal.a_paterno} - {self.cargo}"
+    
+    history = HistoricalRecords()
 
 class Rango(models.Model):
     nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Rango")
@@ -133,6 +148,8 @@ class Rango(models.Model):
 
     def __str__(self): 
         return self.nombre
+    
+    history = HistoricalRecords()
 
 class Gremio(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
@@ -147,6 +164,8 @@ class Gremio(models.Model):
         ordering = ['nombre']
 
     def __str__(self): return self.nombre
+
+    history = HistoricalRecords()
 
 class PCampo(models.Model):
     personal = models.OneToOneField(Personal, on_delete=models.CASCADE, related_name='obrero_info')
@@ -173,12 +192,19 @@ class PCampo(models.Model):
     activo_en_campo = models.BooleanField(default=True, verbose_name="Actualmente Activo en Campo")
 
     def __str__(self):
-        return f"{self.personal.nombre} {self.gremio}"
+        gremio_nombre = self.gremio.nombre if self.gremio else "Sin gremio"
+        return f"{self.personal.nombre} {self.personal.a_paterno} ({self.dni_personal()}) - Gremio: {gremio_nombre}"
+    
+    def dni_personal(self):
+        return self.personal.dni
+    dni_personal.short_description = "DNI"
     
     class Meta:
         verbose_name = "Personal de Campo"
         verbose_name_plural = "Personal de Campo"
         ordering = ['personal__a_paterno']
+
+    history = HistoricalRecords()
 
 #NEW MODELS
 
@@ -194,6 +220,7 @@ class HorarioTrabajo(models.Model):
     class Meta:
         verbose_name = "Horario de Trabajo"
         verbose_name_plural = "Horarios de Trabajo"
+    history = HistoricalRecords()
 
 
 class DetalleDiaHorario(models.Model):
@@ -231,6 +258,8 @@ class DetalleDiaHorario(models.Model):
         if self.hora_inicio_tolerancia_entrada and self.hora_fin_tolerancia_entrada and self.hora_fin_tolerancia_entrada < self.hora_inicio_tolerancia_entrada:
             raise models.ValidationError("La hora fin de tolerancia no puede ser anterior a la hora de inicio")
         
+    history = HistoricalRecords()
+        
 class AsignacionHorario(models.Model):
     personal = models.ForeignKey(Personal, on_delete=models.CASCADE, related_name='asignaciones_horario')
     horario_trabajo = models.ForeignKey(HorarioTrabajo, on_delete=models.PROTECT, related_name='personal_asignado')
@@ -245,6 +274,8 @@ class AsignacionHorario(models.Model):
         ordering = ['-fecha_inicio', 'personal']
         verbose_name = "Asignacion de Horario"
         verbose_name_plural = "Asignaciones de Horarios"
+
+    history = HistoricalRecords()
 
 class Marcacion(models.Model):
     class Tipo(models.TextChoices):
@@ -270,7 +301,6 @@ class Marcacion(models.Model):
     origen_marcacion = models.CharField(max_length=100, blank=True, null=True, verbose_name="Origen/Dispositivo")
     foto_evidencia = models.ImageField(upload_to='asistencia/evidencias/%Y/%m/%d/', blank=True, null=True)
 
-    #AUN POR DEFINIR
     latitud = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     longitud = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='marcaciones_creadas')
@@ -294,6 +324,8 @@ class Marcacion(models.Model):
         ordering = ['personal', 'fecha_hora_efectiva']
         verbose_name = "Marcacion de Asistencia"
         verbose_name_plural = "Marcaciones de Asistencia"
+
+    history = HistoricalRecords()
 
     
 class JornadaLaboral(models.Model):
@@ -326,7 +358,7 @@ class JornadaLaboral(models.Model):
     fecha = models.DateField()
     detalle_dia_horario_aplicado = models.ForeignKey(DetalleDiaHorario, on_delete=models.PROTECT, related_name='jornadas_aplicadas')
     marcacion_entrada = models.OneToOneField(Marcacion, on_delete=models.SET_NULL, related_name='jornada_como_entrada', null=True, blank=True)
-    #RELACION RARA
+
     marcacion_inicio_descanso = models.OneToOneField(Marcacion, on_delete=models.SET_NULL, related_name='jornada_como_inicio_descanso', null=True, blank=True)
     marcacion_fin_descanso = models.OneToOneField(Marcacion, on_delete=models.SET_NULL, related_name='jornada_como_fin_descanso', null=True, blank=True)
     marcacion_salida = models.OneToOneField(Marcacion, on_delete=models.SET_NULL, related_name='jornada_como_salida', null=True, blank=True)
@@ -337,7 +369,7 @@ class JornadaLaboral(models.Model):
     horas_extra_aprobadas = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
 
     estado_marcaciones = models.CharField(max_length=30, choices=EstadoMarcaciones.choices, default=EstadoMarcaciones.PENDIENTE_ENTRADA)
-    estado_joranada = models.CharField(max_length=30, choices=EstadoJornada.choices, default=EstadoJornada.PROGRAMADA)
+    estado_jornada = models.CharField(max_length=30, choices=EstadoJornada.choices, default=EstadoJornada.PROGRAMADA)
     aplica_dominical_calculado = models.BooleanField(default=False, help_text="Se determina el cierre semanal si cumplio horas.")
     observaciones_supervisor = models.TextField(blank=True, null=True)
     es_cerrada = models.BooleanField(default=False, help_text="Indica si la jornada pertenece a una semana ya cerrada.")
@@ -350,6 +382,8 @@ class JornadaLaboral(models.Model):
         ordering = ['-fecha', 'personal']
         verbose_name = "Jornada Laboral"
         verbose_name_plural = "Jornadas Laborales"
+
+    history = HistoricalRecords()
 
 
 class Incidencia(models.Model):
@@ -397,6 +431,8 @@ class Incidencia(models.Model):
         verbose_name = "Incidencia de Asistencia"
         verbose_name_plural = "Incidencias de Asistencia"
 
+    history = HistoricalRecords()
+
 class CalendarioFeriado(models.Model):
     class TipoFeriado(models.TextChoices):
         NACIONAL = 'NACIONAL', 'Nacional'
@@ -418,6 +454,8 @@ class CalendarioFeriado(models.Model):
         verbose_name = "Feriado"
         verbose_name_plural = "Feriados"
 
+    history = HistoricalRecords()
+
 
 class SemanaLaboralCierre(models.Model):
     ano = models.PositiveBigIntegerField()
@@ -438,4 +476,6 @@ class SemanaLaboralCierre(models.Model):
         ordering = ['-ano', '-numero_semana_iso']
         verbose_name = "Cierre de Semana Laboral"
         verbose_name_plural = "Cierres de Semanas Laborales"
+
+    history = HistoricalRecords()
         
