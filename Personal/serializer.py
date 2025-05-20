@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import Personal, Staff, PCampo, Rango, Gremio, Pais, Region, Provincia, Distrito
+from .models import Personal, Staff, PCampo, Rango, Gremio, Pais, Region, Provincia, Distrito, HorarioTrabajo, DetalleDiaHorario, AsignacionHorario, Marcacion, JornadaLaboral, Incidencia, CalendarioFeriado, SemanaLaboralCierre
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 class BasicUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -345,3 +346,47 @@ class PCampoSerializer(serializers.ModelSerializer):
             validated_data.pop('retcc_img', None)
         
         return super().update(instance, validated_data) """
+    
+class DetalleDiaHorarioSerializer(serializers.ModelSerializer):
+    dia_semana_display = serializers.CharField(source='get_dia_semana_display', read_only=True)
+
+    class Meta:
+        model = DetalleDiaHorario
+        fields = [
+            'id', 'horario_trabajo', 'dia_semana', 'dia_semana_display', 'es_laborable', 'hora_entrada_teorica',
+            'hora_inicio_tolerancia_entrada', 'hora_fin_tolerancia_entrada', 'hora_inicio_descanso_teorica',
+            'hora_fin_descanso_teorica', 'duracion_descanso_teorico', 'hora_salida_teorica', 'horas_jornada_teorica'
+        ]
+
+
+class HorarioTrabajoSerializer(serializers.ModelSerializer):
+    detalles_dias = DetalleDiaHorarioSerializer(many=True, required=False)
+
+    class Meta:
+        model = HorarioTrabajo
+        fields = ['id', 'nombre', 'descripcion', 'hs_dominical', 'activo', 'detalles_dias']
+
+    def create(self, validated_data):
+        detalles_data = validated_data.pop('detalles_dias', [])
+        horario = HorarioTrabajo.objects.create(**validated_data)
+        for detalle_data in detalles_data:
+            DetalleDiaHorario.objects.create(horario_trabajo=horario, **detalle_data)
+        return horario
+    
+    def update(self, instance, validated_data):
+        detalles_data = validated_data.pop('detalles_dias', None)
+
+        instance.nombre = validated_data.get('nombre', instance.nombre)
+        instance.descripcion = validated_data.get('descripcion', instance.descripcion)
+        instance.hs_dominical = validated_data.get('hs_dominical', instance.hs_dominical)
+        instance.activo = validated_data.get('activo', instance.activo)
+        instance.save()
+
+        if detalles_data is not None:
+            instance.detalles_dias.all().delete()
+            for detalle_data in detalles_data:
+                DetalleDiaHorario.objects.create(horario_trabajo=instance, **detalle_data)
+
+        return instance
+    
+    ##AQQUII AVANCE
