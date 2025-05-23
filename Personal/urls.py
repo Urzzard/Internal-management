@@ -9,15 +9,14 @@ router.register(r'Staff', views.StaffView, 'staff')
 router.register(r'Rango', views.RangoView, 'rango')
 router.register(r'Gremio', views.GremioView, 'gremio')
 router.register(r'PCampo', views.PCampoView, 'pcampo')
-""" router.register(r'Pcasa', views.PcasaView, 'pcasa')
-router.register(r'Psubcontrato', views.PsubcontratoView, 'psubcontrato')
-router.register(r'Psindicato', views.PsindicatoView, 'psindicato') """
 router.register(r'AdminCreateUser', views.AdminUserCreateView, 'admin-create-user')
 router.register(r'AdminManageUsers', views.AdminUserManagementView, 'admin-manage-users')
 router.register(r'Paises', views.PaisViewSet, 'paises')
 router.register(r'Regiones', views.RegionViewSet, 'regiones')
 router.register(r'Provincias', views.ProvinciaViewSet, 'provincias')
 router.register(r'Distritos', views.DistritoViewSet, 'distritos')
+router.register(r'Horarios-trabajo', views.HorarioTrabajoViewSet, 'horarios-trabajo')
+router.register(r'Asignaciones-horario', views.AsignacionHorarioViewSet, 'asignaciones-horario')
 
 urlpatterns = [
     path("api-personal/", include(router.urls)),

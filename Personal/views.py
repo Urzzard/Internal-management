@@ -1,10 +1,20 @@
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import viewsets, status, generics, filters
-from django_filters.rest_framework import DjangoFilterBackend 
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import render
-from .serializer import PersonalSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, GremioSerializer, AdminUserCreateSerrializer, BasicUserSerializer, PersonalInfoBasicaSerializer, AdminUserManagementSerializer, PaisSerializer, RegionSerializer, ProvinciaSerializer, DistritoSerializer
-from .models import Personal, Staff, PCampo, Rango, Gremio, Pais, Region, Provincia, Distrito
+from .serializer import (
+    PersonalSerializer, StaffSerializer, PCampoSerializer, RangoSerializer, GremioSerializer, 
+    AdminUserCreateSerrializer, BasicUserSerializer, PersonalInfoBasicaSerializer, AdminUserManagementSerializer, 
+    PaisSerializer, RegionSerializer, ProvinciaSerializer, DistritoSerializer, HorarioTrabajoSerializer, 
+    DetalleDiaHorarioSerializer, AsignacionHorarioSerializer, MarcacionSerializer, JornadaLaboralSerializer, 
+    IncidenciaSerializer, CalendarioFeriadoSerializer, SemanaLaboralCierreSerializer
+    )
+from .models import (
+    Personal, Staff, PCampo, Rango, Gremio, Pais, Region, Provincia, Distrito, 
+    HorarioTrabajo, DetalleDiaHorario, AsignacionHorario, Marcacion, JornadaLaboral, 
+    Incidencia, CalendarioFeriado, SemanaLaboralCierre
+    )
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
 import csv
@@ -12,6 +22,10 @@ from django.http import HttpResponse
 from rest_framework.decorators import action
 from django.template.loader import render_to_string
 from weasyprint import HTML
+from django.utils import timezone
+from django.db import transaction
+from datetime import timedelta, datetime
+
 
 class PaisViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Pais.objects.all()
@@ -261,19 +275,62 @@ class PCampoView(viewsets.ModelViewSet):
             writer.writerow(row)
         return response
 
-""" class PcasaView(viewsets.ModelViewSet):
-    serializer_class = PcasaSerializer
-    queryset = Pcasa.objects.all()
-    permission_classes = [IsAuthenticated, IsAdminUser]
+#NEW SERIALIZERS
 
-class PsubcontratoView(viewsets.ModelViewSet):
-    serializer_class = PsubcontratoSerializer
-    queryset = Psubcontrato.objects.all()
+class HorarioTrabajoViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint para gestionar Horarios de Trabajo y sus Detalles de Días.
+    Permite crear, listar, actualizar y eliminar horarios.
+    Los detalles de los días se manejan anidados.
+    """
+    queryset = HorarioTrabajo.objects.prefetch_related('detalles_dias').all()
+    serializer_class = HorarioTrabajoSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['activo']
+    search_fields = ['nombre', 'descripcion']
+    ordering_fields = ['nombre', 'activo']
 
-class PsindicatoView(viewsets.ModelViewSet):
-    serializer_class = PsindicatoSerializer
-    queryset = Psindicato.objects.all()
+
+class AsignacionHorarioViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint para asignar Horarios de Trabajo al Personal.
+    """
+    queryset = AsignacionHorario.objects.select_related(
+        'personal__pais', 'personal__region',
+        'horario_trabajo'
+    ).all()
+    serializer_class = AsignacionHorarioSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
- """
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = {
+        'personal': ['exact'],
+        'personal__dni': ['exact', 'icontains'],
+        'horario_trabajo': ['exact'],
+        'activo': ['exact'],
+        'fecha_inicio': ['exact', 'gte', 'lte'], # gte=mayor o igual, lte=menor o igual
+        'fecha_fin': ['exact', 'gte', 'lte', 'isnull'],
+    }
+    search_fields = [
+        'personal__nombre', 'personal__a_paterno', 'personal__a_materno', 'personal__dni',
+        'horario_trabajo__nombre'
+    ]
+    ordering_fields = ['personal__a_paterno', 'horario_trabajo__nombre', 'fecha_inicio', 'activo']
+
+    def perform_create(self, serializer):
+        # Lógica adicional al crear, si es necesaria
+        # Por ejemplo, asegurar que no haya solapamientos activos (aunque el serializer ya lo intenta)
+        # o desactivar otras asignaciones activas para el mismo personal.
+        # Esta lógica puede ser compleja.
+        # personal = serializer.validated_data.get('personal')
+        # if personal and serializer.validated_data.get('activo'):
+        #     AsignacionHorario.objects.filter(personal=personal, activo=True).update(activo=False)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        # Lógica similar al crear si se activa una asignación.
+        # personal = serializer.instance.personal # o serializer.validated_data.get('personal', serializer.instance.personal)
+        # if personal and serializer.validated_data.get('activo'):
+        #     AsignacionHorario.objects.filter(personal=personal, activo=True).exclude(pk=serializer.instance.pk).update(activo=False)
+        serializer.save()
 

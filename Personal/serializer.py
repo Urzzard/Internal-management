@@ -389,4 +389,141 @@ class HorarioTrabajoSerializer(serializers.ModelSerializer):
 
         return instance
     
-    ##AQQUII AVANCE
+    #REVISAR SI ESTO SOLO PERMITE QUE LA ASIGNACION DE HORARIOS SEA UNICA
+    
+class AsignacionHorarioSerializer(serializers.ModelSerializer):
+    personal_info = PersonalInfoBasicaSerializer(source='personal', read_only=True)
+    horario_trabajo_info = HorarioTrabajoSerializer(source='horario_trabajo', read_only=True)
+
+    personal_id = serializers.PrimaryKeyRelatedField(queryset=Personal.objects.all(), source='personal', write_only=True)
+    horario_trabajo_id = serializers.PrimaryKeyRelatedField(queryset=HorarioTrabajo.objects.filter(activo=True), source='horario_trabajo', write_only=True)
+
+    class Meta:
+        model = AsignacionHorario
+        fields = [
+            'id', 'personal_info', 'horario_trabajo_info', 'fecha_inicio', 'fecha_fin', 'activo',
+            'personal_id', 'horario_trabajo_id'
+        ]
+        read_only_fields = ['id', 'personal_info', 'horario_trabajo_info']
+
+    def validate(self, data):
+        personal = data.get('personal')
+        fecha_inicio = data.get('fecha_inicio')
+        fecha_fin = data.get('fecha_fin')
+
+        if personal and fecha_inicio:
+            qs = AsignacionHorario.objects.filter(personal=personal, activo=True)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            for asignacion_existente in qs:
+                if fecha_fin and asignacion_existente.fecha_fin:
+                    if max(fecha_inicio, asignacion_existente.fecha_inicio) <= min(fecha_fin, asignacion_existente.fecha_fin):
+                        raise serializers.ValidationError(f"{personal} ya tiene una asignación activa que se solapa en este rango de fechas.")
+                elif fecha_fin is None and asignacion_existente.fecha_fin is None:
+                     raise serializers.ValidationError(f"{personal} ya tiene una asignación activa indefinida.")
+        return data
+    
+class MarcacionSerializer(serializers.ModelSerializer):
+    personal_info = PersonalInfoBasicaSerializer(source='personal', read_only=True)
+    creado_por_username = serializers.CharField(source='creado_por.username', read_only=True, allow_null=True)
+    editado_por_username = serializers.CharField(source='editado_por.username', read_only=True, allow_null=True)
+    personal_id = serializers.PrimaryKeyRelatedField(queryset=Personal.objects.all(), source='personal')
+
+    class Meta:
+        model = Marcacion
+        fields = [
+            'id', 'personal_info', 'fecha_hora_marcada', 'fecha_hora_efectiva', 'tipo_marcacion',
+            'metodo_marcacion', 'origen_marcacion', 'foto_evidencia', 'latitud', 'longitud',
+            'creado_por_username', 'fecha_creacion', 'editado_por_username', 'fecha_edicion',
+            'motivo_edicion', 'es_correccion_manual',
+            'personal_id'
+        ]
+        read_only_fields = ['id', 'personal_info', 'creado_por_username', 'fecha_creacion', 'editado_por_username', 'fecha_edicion']
+        extra_kwargs = {
+            'foto_evidencia': {'required': False, 'allow_null': True},
+            # 'creado_por': {'write_only': True, 'required': False, 'allow_null': True}, # Se manejará en la vista
+            # 'editado_por': {'write_only': True, 'required': False, 'allow_null': True}, # Se manejará en la vista
+        }
+
+    def create(self, validated_data):
+        if 'fecha_hora_efectiva' not in validated_data or not validated_data['fecha_hora_efectiva']:
+            validated_data['fecha_hora_efectiva'] = validated_data['fecha_hora_marcada']
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if validated_data.get('es_correccion_manual') and not instance.fecha_edicion:
+             validated_data['fecha_edicion'] = timezone.now()
+        validated_data.setdefault('fecha_hora_efectiva', instance.fecha_hora_efectiva)
+        return super().update(instance, validated_data)
+    
+    
+class JornadaLaboralSerializer(serializers.ModelSerializer):
+    personal_info = PersonalInfoBasicaSerializer(source='personal', read_only=True)
+    detalle_dia_horario_info = DetalleDiaHorarioSerializer(source='detalle_dia_horario_aplicado', read_only=True)
+    marcacion_entrada_info = MarcacionSerializer(source='marcacion_entrada', read_only=True)
+    marcacion_inicio_descanso_info = MarcacionSerializer(source='marcacion_inicio_descanso', read_only=True)
+    marcacion_fin_descanso_info = MarcacionSerializer(source='marcacion_fin_descanso', read_only=True)
+    marcacion_salida_info = MarcacionSerializer(source='marcacion_salida', read_only=True)
+    personal_id = serializers.PrimaryKeyRelatedField(queryset=Personal.objects.all(), source='personal', write_only=True)
+    detalle_dia_horario_aplicado_id = serializers.PrimaryKeyRelatedField(queryset=DetalleDiaHorario.objects.all(), source='detalle_dia_horario_aplicado', write_only=True)
+
+    class Meta:
+        model = JornadaLaboral
+        fields = [
+            'id', 'personal_info', 'fecha', 'detalle_dia_horario_info',
+            'marcacion_entrada_info', 'marcacion_inicio_descanso_info',
+            'marcacion_fin_descanso_info', 'marcacion_salida_info',
+            'minutos_tardanza_calculados', 'horas_normales_calculadas',
+            'horas_extra_potenciales', 'horas_extra_aprobadas',
+            'estado_marcaciones', 'estado_jornada', 'aplica_dominical_calculado',
+            'observaciones_supervisor', 'es_cerrada',
+            # Campos para escritura si se crea/actualiza directamente
+            'personal_id', 'detalle_dia_horario_aplicado_id', 'fecha', # fecha es clave aquí
+            # No incluir campos calculados ni FKs a marcaciones para escritura directa
+        ]
+        read_only_fields = [
+            'id', 'personal_info', 'detalle_dia_horario_info',
+            'marcacion_entrada_info', 'marcacion_inicio_descanso_info',
+            'marcacion_fin_descanso_info', 'marcacion_salida_info',
+            'minutos_tardanza_calculados', 'horas_normales_calculadas',
+            'horas_extra_potenciales',
+            'estado_marcaciones',
+            'aplica_dominical_calculado',
+        ]
+
+class IncidenciaSerializer(serializers.ModelSerializer):
+    personal_info = PersonalInfoBasicaSerializer(source='personal', read_only=True)
+    jornada_info = JornadaLaboralSerializer(source='jornada_laboral', read_only=True, allow_null=True)
+    creado_por_username = serializers.CharField(source='creado_por.username', read_only=True, allow_null=True)
+    aprobado_rechazado_por_username = serializers.CharField(source='aprobado_rechazado_por.username', read_only=True, allow_null=True)
+    personal_id = serializers.PrimaryKeyRelatedField(queryset=Personal.objects.all(), source='personal')
+    jornada_laboral_id = serializers.PrimaryKeyRelatedField(queryset=JornadaLaboral.objects.all(), source='jornada_laboral', allow_null=True, required=False)
+
+    class Meta:
+        model = Incidencia
+        fields = '__all__'
+        read_only_fields = ('id', 'personal_info', 'jornada_info', 'creado_por_username', 'aprobado_rechazado_por_username', 'fecha_creacion', 'fecha_aprobacion_rechazo')
+        extra_kwargs = {
+            'documento_adjunto': {'required': False, 'allow_null': True},
+        }
+
+class CalendarioFeriadoSerializer(serializers.ModelSerializer):
+    pais_info = PaisSerializer(source='pais', read_only=True, allow_null=True)
+    region_info = RegionSerializer(source='region', read_only=True, allow_null=True)
+    pais_id = serializers.PrimaryKeyRelatedField(queryset=Pais.objects.all(), source='pais', write_only=True, allow_null=True, required=False)
+    region_id = serializers.PrimaryKeyRelatedField(queryset=Region.objects.all(), source='region', write_only=True, allow_null=True, required=False)
+
+    class Meta:
+        model = CalendarioFeriado
+        fields = '__all__'
+        read_only_fields = ('id', 'pais_info', 'region_info')
+
+
+class SemanaLaboralCierreSerializer(serializers.ModelSerializer):
+    cerrada_por_username = serializers.CharField(source='cerrada_por.username', read_only=True, allow_null=True)
+
+    class Meta:
+        model = SemanaLaboralCierre
+        fields = '__all__'
+        read_only_fields = ('id', 'cerrada_por_username', 'fecha_cierre')
