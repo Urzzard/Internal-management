@@ -1,0 +1,100 @@
+/* client/src/features/personal/pages/ControlAsistencia/RegistroTareoDiario.module.css */
+.tareoContainer {
+    padding: 20px;
+    max-width: 800px;
+    margin: auto;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.selectorSection {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: flex-end;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.formGroup label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.formGroup input[type="date"],
+.formGroup input[type="time"],
+.formGroup select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.marcacionesForm {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.formRow {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 10px;
+}
+
+.formRow > .formGroup {
+    flex: 1; /* Ocupar espacio equitativo */
+}
+
+
+.saveButton, .normalButton {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 1em;
+    margin-top: 10px;
+}
+
+.saveButton {
+    background-color: #28a745; /* Verde */
+}
+.saveButton:hover {
+    background-color: #218838;
+}
+.saveButton:disabled {
+    background-color: #ccc;
+}
+
+.normalButton {
+    background-color: #007bff; /* Azul */
+    margin-left: 10px; /* Espacio si están en la misma línea */
+}
+.normalButton:hover {
+    background-color: #0056b3;
+}
+.normalButton:disabled {
+    background-color: #ccc;
+}
+
+
+.jornadaResumen {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+}
+
+.jornadaResumen h4 {
+    margin-top: 0;
+}
+.jornadaResumen p {
+    margin: 5px 0;
+}

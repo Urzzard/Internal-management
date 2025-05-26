@@ -17,10 +17,13 @@ router.register(r'Provincias', views.ProvinciaViewSet, 'provincias')
 router.register(r'Distritos', views.DistritoViewSet, 'distritos')
 router.register(r'Horarios-trabajo', views.HorarioTrabajoViewSet, 'horarios-trabajo')
 router.register(r'Asignaciones-horario', views.AsignacionHorarioViewSet, 'asignaciones-horario')
+router.register(r'Marcaciones', views.MarcacionViewSet, 'marcaciones')
+router.register(r'Jornadas-laborales', views.JornadaLaboralViewSet, 'jornadas-laborales')
 
 urlpatterns = [
     path("api-personal/", include(router.urls)),
     path("api-personal/eligible-users/", views.EligibleUsersForStaffView.as_view(), name='eligible-users'),
     path("api-personal/eligible-personal/", views.EligiblePersonalForStaffView.as_view(), name='eligible-personal'),
+    path("api-personal/registrar-jornada-completa/", views.RegistrarJornadaCompletaView.as_view(), name='registrar-jornada-completa'),
     path('personal-docs/', include_docs_urls(title="Api Personal")),
 ]

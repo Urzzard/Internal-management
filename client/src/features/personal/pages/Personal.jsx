@@ -1,5 +1,6 @@
 import addpersonal from '../../../assets/personal/agregar-usuario.png'
 import apersonal from '../../../assets/personal/padmin2.png'
+import tareo from '../../../assets/personal/tareo.png'
 import { BaseLayout } from '../../../components/layout/BaseLayout'
 import { BoxMenu } from '../../../components/boxmenu/BoxMenu'
 
@@ -16,6 +17,11 @@ export function Personal(){
             tittle: 'ADMINISTRACION DE PERSONAL',
             icon: apersonal,
             path: '/admin-personal'
+        },
+        {
+            tittle: 'REGISTRO DE TAREO DIARIO',
+            icon: tareo,
+            path: '/tareo-personal'
         }
     ]
 

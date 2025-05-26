@@ -1,4 +1,5 @@
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import viewsets, status, generics, filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -19,11 +20,11 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.contrib.auth.models import User
 import csv
 from django.http import HttpResponse
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes as dec_permission_classes
 from django.template.loader import render_to_string
 from weasyprint import HTML
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction, models
 from datetime import timedelta, datetime
 
 
@@ -275,7 +276,155 @@ class PCampoView(viewsets.ModelViewSet):
             writer.writerow(row)
         return response
 
-#NEW SERIALIZERS
+#NEW VIEWS
+
+def procesar_o_actualizar_jornada_laboral(personal_id, fecha_jornada):
+    """
+    Toma el ID del personal y una fecha, busca las marcaciones efectivas del día,
+    y crea o actualiza el registro JornadaLaboral con los cálculos correspondientes.
+    Retorna el objeto JornadaLaboral procesado o None si hay error.
+    """
+    try:
+        personal = Personal.objects.get(pk=personal_id)
+        fecha_obj = fecha_jornada
+        if isinstance(fecha_jornada, str):
+            fecha_obj = datetime.strptime(fecha_jornada, '%Y-%m-%d').date()
+
+        # 1. Obtener la asignación de horario activa para este personal en esta fecha
+        asignacion_activa = AsignacionHorario.objects.filter(
+            personal=personal,
+            fecha_inicio__lte=fecha_obj,
+            activo=True
+        ).filter(
+            models.Q(fecha_fin__gte=fecha_obj) | models.Q(fecha_fin__isnull=True)
+        ).order_by('-fecha_inicio').first()
+
+        if not asignacion_activa:
+            print(f"No se encontró asignación de horario activa para {personal} en {fecha_obj}")
+            return None
+        
+        # 2. Obtener el DetalleDiaHorario para el día de la semana de la fecha_jornada
+        dia_semana_jornada = fecha_obj.weekday()
+        detalle_dia = DetalleDiaHorario.objects.filter(
+            horario_trabajo=asignacion_activa.horario_trabajo,
+            dia_semana=dia_semana_jornada
+        ).first()
+
+        if not detalle_dia or not detalle_dia.es_laborable:
+            print(f"Día no laborable o sin detalle de horario para {personal} en {fecha_obj} ({detalle_dia.get_dia_semana_display() if detalle_dia else 'N/A'})")
+            jornada, created = JornadaLaboral.objects.update_or_create(
+                personal=personal,
+                fecha=fecha_obj,
+                defaults={
+                    'detalle_dia_horario_aplicado': detalle_dia,
+                    'estado_jornada': JornadaLaboral.EstadoJornada.FERIADO_NO_LABORADO if not detalle_dia or not detalle_dia.es_laborable else JornadaLaboral.EstadoJornada.PROGRAMADA,
+                    'estado_marcaciones': JornadaLaboral.EstadoMarcaciones.COMPLETA if not detalle_dia or not detalle_dia.es_laborable else JornadaLaboral.EstadoMarcaciones.PENDIENTE_ENTRADA,
+                }
+            )
+            return jornada
+        
+        # 3. Obtener las marcaciones efectivas del día para este personal
+        start_of_day = timezone.make_aware(datetime.combine(fecha_obj, datetime.min.time()))
+        end_of_day = timezone.make_aware(datetime.combine(fecha_obj, datetime.max.time()))
+
+        marcaciones_dia = Marcacion.objects.filter(
+            personal=personal,
+            fecha_hora_efectiva__gte=start_of_day,
+            fecha_hora_efectiva__lte=end_of_day
+        ).order_by('fecha_hora_efectiva')
+
+        m_entrada = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.ENTRADA).first()
+        m_inicio_desc = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.INICIO_DESCANSO).first()
+        m_fin_desc = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.FIN_DESCANSO).first()
+        m_salida = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.SALIDA).last()
+
+        # 4. Crear o actualizar JornadaLaboral
+        jornada, created = JornadaLaboral.objects.update_or_create(
+            personal=personal,
+            fecha=fecha_obj,
+            defaults={
+                'detalle_dia_horario_aplicado': detalle_dia,
+                'marcacion_entrada': m_entrada,
+                'marcacion_inicio_descanso': m_inicio_desc,
+                'marcacion_fin_descanso': m_fin_desc,
+                'marcacion_salida': m_salida,
+            }
+        )
+
+        # 5. Realizar Cálculos (simplificados por ahora)
+        tardanza_minutos = 0
+        horas_normales = timedelta()
+        horas_extra_pot = timedelta()
+
+        if m_entrada:
+            hora_fin_tolerancia_dt = datetime.combine(fecha_obj, detalle_dia.hora_fin_tolerancia_entrada)
+            if timezone.is_naive(hora_fin_tolerancia_dt):
+                 hora_fin_tolerancia_dt = timezone.make_aware(hora_fin_tolerancia_dt)
+
+            if m_entrada.fecha_hora_efectiva > hora_fin_tolerancia_dt:
+                tardanza = m_entrada.fecha_hora_efectiva - hora_fin_tolerancia_dt
+                tardanza_minutos = int(tardanza.total_seconds() / 60)
+
+        if m_entrada and m_salida:
+            tiempo_bruto_trabajado = m_salida.fecha_hora_efectiva - m_entrada.fecha_hora_efectiva
+            tiempo_descanso = timedelta()
+
+            if m_inicio_desc and m_fin_desc:
+                if m_fin_desc.fecha_hora_efectiva > m_inicio_desc.fecha_hora_efectiva:
+                    tiempo_descanso = m_fin_desc.fecha_hora_efectiva - m_inicio_desc.fecha_hora_efectiva
+
+            tiempo_neto_trabajado = tiempo_bruto_trabajado - tiempo_descanso
+            horas_jornada_teorica_td = timedelta(hours=float(detalle_dia.horas_jornada_teorica))
+
+            if tiempo_neto_trabajado > horas_jornada_teorica_td:
+                horas_normales = horas_jornada_teorica_td
+                horas_extra_pot = tiempo_neto_trabajado - horas_jornada_teorica_td
+            else:
+                horas_normales = tiempo_neto_trabajado
+                # Aquí podrías calcular horas faltantes si es necesario
+
+        jornada.minutos_tardanza_calculados = tardanza_minutos
+        jornada.horas_normales_calculadas = round(horas_normales.total_seconds() / 3600, 2) if horas_normales else 0.00
+        jornada.horas_extra_potenciales = round(horas_extra_pot.total_seconds() / 3600, 2) if horas_extra_pot else 0.00
+        # jornada.horas_extra_aprobadas = 0 # Se aprueban después
+
+        # Determinar estado_marcaciones y estado_jornada (lógica más compleja aquí)
+        if m_entrada and m_salida and (not detalle_dia.duracion_descanso_teorico > 0 or (m_inicio_desc and m_fin_desc)):
+            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.COMPLETA
+            if tardanza_minutos > 0:
+                jornada.estado_jornada = JornadaLaboral.EstadoJornada.TARDANZA
+            elif jornada.horas_extra_potenciales > 0:
+                 jornada.estado_jornada = JornadaLaboral.EstadoJornada.CON_HE_PENDIENTE
+            else:
+                jornada.estado_jornada = JornadaLaboral.EstadoJornada.PRESENTE_COMPLETA
+        elif not m_entrada:
+            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.PENDIENTE_ENTRADA
+            jornada.estado_jornada = JornadaLaboral.EstadoJornada.AUSENTE_NJ
+        elif not m_salida:
+            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.PENDIENTE_SALIDA
+            jornada.estado_jornada = JornadaLaboral.EstadoJornada.PRESENTE_INCOMPLETA
+        else: # Descanso incompleto u otro
+            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.REQUIERE_REVISION
+            jornada.estado_jornada = JornadaLaboral.EstadoJornada.PRESENTE_INCOMPLETA
+
+        jornada.save()
+        return jornada
+    
+    except Personal.DoesNotExist:
+        print(f"Error: Personal con ID {personal_id} no encontrado.")
+        return None
+    except AsignacionHorario.DoesNotExist:
+        print(f"Error: No hay asignación de horario para {personal_id} en {fecha_jornada}.")
+        return None
+    except DetalleDiaHorario.DoesNotExist:
+        print(f"Error: No hay detalle de día para el horario asignado a {personal_id} en {fecha_jornada}.")
+        return None
+    except Exception as e:
+        print(f"Error general procesando jornada para {personal_id} en {fecha_jornada}: {e}")
+        # Considera loggear el traceback completo aquí para depuración
+        import traceback
+        traceback.print_exc()
+        return None
 
 class HorarioTrabajoViewSet(viewsets.ModelViewSet):
     """
@@ -334,3 +483,187 @@ class AsignacionHorarioViewSet(viewsets.ModelViewSet):
         #     AsignacionHorario.objects.filter(personal=personal, activo=True).exclude(pk=serializer.instance.pk).update(activo=False)
         serializer.save()
 
+class RegistrarJornadaCompletaView(APIView):
+    """
+    Endpoint para registrar las 4 marcaciones de una jornada completa
+    para un empleado en una fecha específica (Manera 1).
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def post(self, request, *args, **kwargs):
+        personal_id = request.data.get('personal_id')
+        fecha_str = request.data.get('fecha')
+
+        hora_entrada_str = request.data.get('hora_entrada')
+        hora_inicio_descanso_str = request.data.get('hora_inicio_descanso')
+        hora_fin_descanso_str = request.data.get('hora_fin_descanso')
+        hora_salida_str = request.data.get('hora_salida')
+        es_jornada_normal_teorica = request.data.get('es_jornada_normal', False)
+
+        if not personal_id or not fecha_str:
+            return Response({"error": "personal_id y fecha son requeridos."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            personal = Personal.objects.get(pk=personal_id)
+        except ValueError:
+            return Response({"error": "Formato de fecha inválido. Usar YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        except Personal.DoesNotExist:
+            return Response({"error": f"Personal con ID {personal_id} no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        
+        asignacion = AsignacionHorario.objects.filter(
+            personal=personal, fecha_inicio__lte=fecha_obj, activo=True
+        ).filter(models.Q(fecha_fin__gte=fecha_obj) | models.Q(fecha_fin__isnull=True)).first()
+
+        if not asignacion:
+             return Response({"error": f"No hay horario asignado para {personal} en {fecha_obj}."}, status=status.HTTP_400_BAD_REQUEST)
+
+        detalle_dia = DetalleDiaHorario.objects.filter(
+            horario_trabajo=asignacion.horario_trabajo, dia_semana=fecha_obj.weekday()
+        ).first()
+
+        if not detalle_dia or (not es_jornada_normal_teorica and not detalle_dia.es_laborable): # Si es manual y no laborable, error
+            return Response({"error": f"Día no laborable o sin detalle de horario para {personal} en {fecha_obj}."}, status=status.HTTP_400_BAD_REQUEST)
+
+        marcaciones_a_crear = []
+
+        with transaction.atomic():
+            # Eliminar marcaciones existentes para este día y personal si se está sobrescribiendo
+            # (Ojo: decidir si esto es lo deseado o si se deben editar/añadir)
+            # Por simplicidad para la Manera 1, podríamos borrar y recrear.
+            Marcacion.objects.filter(
+                personal=personal,
+                fecha_hora_efectiva__date=fecha_obj
+            ).delete() # ¡CUIDADO! Esto borra marcaciones previas del día.
+                       # Considera si es mejor una lógica de actualización.
+
+            def crear_marcacion_data(tipo_marc, hora_str, hora_teorica_default):
+                if hora_str:
+                    try:
+                        hora_obj = datetime.strptime(hora_str, '%H:%M:%S').time()
+                    except ValueError:
+                        try:
+                            hora_obj = datetime.strptime(hora_str, '%H:%M').time()
+                        except ValueError:
+                             raise ValueError(f"Formato de hora inválido para {tipo_marc.label}: {hora_str}")
+                        
+                elif es_jornada_normal_teorica and hora_teorica_default:
+                    hora_obj = hora_teorica_default
+                else:
+                    return None
+
+                fecha_hora_dt = timezone.make_aware(datetime.combine(fecha_obj, hora_obj))
+                return {
+                    'personal': personal,
+                    'fecha_hora_marcada': fecha_hora_dt,
+                    'fecha_hora_efectiva': fecha_hora_dt,
+                    'tipo_marcacion': tipo_marc.value,
+                    'metodo_marcacion': Marcacion.Metodo.MANUAL_SUPERVISOR, # AQUI EL TIPO DE METODO QUE SE USE
+                    'creado_por': request.user if request.user.is_authenticated else None
+                }
+            
+            try:
+                marc_data = []
+                data_entrada = crear_marcacion_data(Marcacion.Tipo.ENTRADA, hora_entrada_str, detalle_dia.hora_fin_tolerancia_entrada or detalle_dia.hora_entrada_teorica)
+                if data_entrada: marc_data.append(Marcacion(**data_entrada))
+
+                if detalle_dia.duracion_descanso_teorico > 0:
+                    data_ini_desc = crear_marcacion_data(Marcacion.Tipo.INICIO_DESCANSO, hora_inicio_descanso_str, detalle_dia.hora_inicio_descanso_teorica)
+                    if data_ini_desc: marc_data.append(Marcacion(**data_ini_desc))
+                    data_fin_desc = crear_marcacion_data(Marcacion.Tipo.FIN_DESCANSO, hora_fin_descanso_str, detalle_dia.hora_fin_descanso_teorica)
+                    if data_fin_desc: marc_data.append(Marcacion(**data_fin_desc))
+
+                data_salida = crear_marcacion_data(Marcacion.Tipo.SALIDA, hora_salida_str, detalle_dia.hora_salida_teorica)
+                if data_salida: marc_data.append(Marcacion(**data_salida))
+
+                if not marc_data and not es_jornada_normal_teorica:
+                     return Response({"error": "Debe ingresar al menos una hora de marcación si no es jornada normal."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if marc_data:
+                    Marcacion.objects.bulk_create(marc_data)
+
+            except ValueError as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+            jornada_procesada = procesar_o_actualizar_jornada_laboral(personal_id, fecha_obj)
+
+            if jornada_procesada:
+                serializer = JornadaLaboralSerializer(jornada_procesada)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"error": "No se pudo procesar la jornada laboral después de crear marcaciones."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"error": "Ocurrió un error inesperado durante la transacción."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+class MarcacionViewSet(viewsets.ModelViewSet):
+    queryset = Marcacion.objects.select_related('personal', 'creado_por', 'editado_por').all()
+    serializer_class = MarcacionSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = {
+        'personal': ['exact'],
+        'personal__dni': ['exact', 'icontains'],
+        'tipo_marcacion': ['exact'],
+        'metodo_marcacion': ['exact'],
+        'fecha_hora_efectiva': ['date__exact', 'date__gte', 'date__lte'],
+        'es_correccion_manual': ['exact'],
+    }
+    search_fields = ['personal__nombre', 'personal__a_paterno', 'personal__dni', 'origen_marcacion', 'motivo_edicion']
+    ordering_fields = ['fecha_hora_efectiva', 'personal__a_paterno']
+
+    def perform_create(self, serializer):
+        if self.request.user.is_authenticated:
+            serializer.save(creado_por=self.request.user)
+        else:
+            serializer.save()
+        marcacion = serializer.instance
+        procesar_o_actualizar_jornada_laboral(marcacion.personal.id, marcacion.fecha_hora_efectiva.date())
+
+
+    def perform_update(self, serializer):
+        if self.request.user.is_authenticated:
+            serializer.save(editado_por=self.request.user, fecha_edicion=timezone.now())
+        else:
+            serializer.save()
+        marcacion = serializer.instance
+        procesar_o_actualizar_jornada_laboral(marcacion.personal.id, marcacion.fecha_hora_efectiva.date())
+
+    def perform_destroy(self, instance):
+        personal_id = instance.personal.id
+        fecha_jornada = instance.fecha_hora_efectiva.date()
+        super().perform_destroy(instance)
+        procesar_o_actualizar_jornada_laboral(personal_id, fecha_jornada)
+
+class JornadaLaboralViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = JornadaLaboral.objects.select_related(
+        'personal', 'detalle_dia_horario_aplicado__horario_trabajo',
+        'marcacion_entrada', 'marcacion_inicio_descanso',
+        'marcacion_fin_descanso', 'marcacion_salida'
+    ).prefetch_related('incidencias')
+    serializer_class = JornadaLaboralSerializer
+    permission_classes = [IsAuthenticated] # Permitir a usuarios logueados (staff?) ver jornadas
+                                          # O IsAdminUser si solo admins
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = {
+        'personal': ['exact'],
+        'personal__dni': ['exact', 'icontains'],
+        'fecha': ['exact', 'gte', 'lte', 'range'],
+        'estado_marcaciones': ['exact'],
+        'estado_jornada': ['exact'],
+        'es_cerrada': ['exact'],
+        'detalle_dia_horario_aplicado__horario_trabajo': ['exact'],
+        'personal__obrero_info__gremio': ['exact'],
+    }
+    search_fields = ['personal__nombre', 'personal__a_paterno', 'personal__dni']
+    ordering_fields = ['fecha', 'personal__a_paterno', 'estado_jornada']
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def reprocesar(self, request, pk=None):
+        jornada = self.get_object()
+        jornada_actualizada = procesar_o_actualizar_jornada_laboral(jornada.personal.id, jornada.fecha)
+        if jornada_actualizada:
+            serializer = self.get_serializer(jornada_actualizada)
+            return Response(serializer.data)
+        return Response({"error": "No se pudo reprocesar la jornada."}, status=status.HTTP_400_BAD_REQUEST)
