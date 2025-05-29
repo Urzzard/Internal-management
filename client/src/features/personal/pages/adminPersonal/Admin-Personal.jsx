@@ -154,6 +154,9 @@ export function AdminPersonal(){
                     <a href='/crud-pcampo' className={styles.adminlink}>
                         <h2>ADMINISTRACION DE PERSONAL DE CAMPO</h2>
                     </a>
+                    <a href='/horario-trabajo' className={styles.adminlink}>
+                        <h2>GESTION DE HORARIO DE TRABAJO</h2>
+                    </a>
                     
                 </div>
             )}

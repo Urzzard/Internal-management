@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { BaseLayout } from '../../../../components/layout/BaseLayout';
-import api from '../../../../api/axios';
+/* import api from '../../../../api/axios'; */
 import { getAllPers } from '../../api/crud-personal.api';
 import styles from './RegistroTareoDiario.module.css';
+import { getJornadaLaboralPorPersonalYFecha, registrarJornadaCompleta } from '../../api/crud-asistencia.api';
 
 export function RegistroTareoDiario() {
     const [personalList, setPersonalList] = useState([]);
@@ -48,12 +49,9 @@ export function RegistroTareoDiario() {
             });
             setJornadaActual(null);
 
-            api.get(`/personal/api-personal/jornadas-laborales/`, {
-                params: { personal: selectedPersonalId, fecha: selectedDate }
-            })
-            .then(response => {
-                if (response.data && response.data.results && response.data.results.length > 0) {
-                    const jornada = response.data.results[0];
+            getJornadaLaboralPorPersonalYFecha(selectedPersonalId, selectedDate)
+            .then(jornada => {
+                if (jornada) {
                     setJornadaActual(jornada);
                     setValue('hora_entrada', jornada.marcacion_entrada_info?.fecha_hora_efectiva ? new Date(jornada.marcacion_entrada_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
                     setValue('hora_inicio_descanso', jornada.marcacion_inicio_descanso_info?.fecha_hora_efectiva ? new Date(jornada.marcacion_inicio_descanso_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
@@ -62,13 +60,6 @@ export function RegistroTareoDiario() {
                 } else {
                     setJornadaActual(null);
                 }
-            })
-            .catch(error => {
-                console.error("Error cargando jornada laboral existente:", error);
-                if (error.response?.status !== 404) {
-                    toast.error("Error al cargar datos de la jornada.");
-                }
-                setJornadaActual(null);
             })
             .finally(() => setIsLoadingJornada(false));
         } else {
@@ -95,8 +86,8 @@ export function RegistroTareoDiario() {
         };
 
         try {
-            const response = await api.post('/personal/api-personal/registrar-jornada-completa/', payload);
-            setJornadaActual(response.data);
+            const responseData = await registrarJornadaCompleta(payload);
+            setJornadaActual(responseData);
             toast.success("Marcaciones manuales guardadas y jornada procesada.");
         } catch (error) {
             console.error("Error guardando marcaciones manuales:", error.response?.data || error);
@@ -121,16 +112,16 @@ export function RegistroTareoDiario() {
         };
 
         try {
-            const response = await api.post('/personal/api-personal/registrar-jornada-completa/', payload);
-            setJornadaActual(response.data);
-            setValue('hora_entrada', response.data.marcacion_entrada_info?.fecha_hora_efectiva ? new Date(response.data.marcacion_entrada_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '');
-            setValue('hora_inicio_descanso', response.data.marcacion_inicio_descanso_info?.fecha_hora_efectiva ? new Date(response.data.marcacion_inicio_descanso_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '');
-            setValue('hora_fin_descanso', response.data.marcacion_fin_descanso_info?.fecha_hora_efectiva ? new Date(response.data.marcacion_fin_descanso_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '');
-            setValue('hora_salida', response.data.marcacion_salida_info?.fecha_hora_efectiva ? new Date(response.data.marcacion_salida_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '');
+            const responseData = await registrarJornadaCompleta(payload);
+            setJornadaActual(responseData);
+            setValue('hora_entrada', responseData.marcacion_entrada_info?.fecha_hora_efectiva ? new Date(responseData.marcacion_entrada_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '');
+            setValue('hora_inicio_descanso', responseData.marcacion_inicio_descanso_info?.fecha_hora_efectiva ? new Date(responseData.marcacion_inicio_descanso_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '');
+            setValue('hora_fin_descanso', responseData.marcacion_fin_descanso_info?.fecha_hora_efectiva ? new Date(responseData.marcacion_fin_descanso_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '');
+            setValue('hora_salida', responseData.marcacion_salida_info?.fecha_hora_efectiva ? new Date(responseData.marcacion_salida_info.fecha_hora_efectiva).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : '');
             toast.success("Jornada normal registrada y procesada.");
         } catch (error) {
             console.error("Error registrando jornada normal:", error.response?.data || error);
-            toast.error(error.response?.data?.error || "Error al registrar jornada normal.");
+            toast.error(error.response?.data?.error || error.message || "Error al registrar jornada normal.");
         } finally {
             setIsSubmitting(false);
         }
