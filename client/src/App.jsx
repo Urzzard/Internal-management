@@ -21,6 +21,7 @@ import { PrivateRoute } from "./components/PrivateRoute";
 import AxiosInterceptor from "./components/AxiosInterceptor";
 import { RegistroTareoDiario } from "./features/personal/pages/ControlAsistencia/RegistroTareoDiario";
 import { CrudHorarioTrabajo } from "./features/personal/pages/adminPersonal/horarios/CrudHorarioTrabajo";
+import { CrudAsignacionHorario } from "./features/personal/pages/adminPersonal/asignacionHorario/CrudAsignacionHorario";
 
 function App(){
   return(
@@ -38,7 +39,7 @@ function App(){
 
 function Content(){
   const location = useLocation();
-  const showNav = ["/inicio", "/inventario", "/crud-categoria", "/crud-material", "/crud-registro-mat", "/personal", "/crud-personal", "/admin-personal", "/crud-gremio", "/crud-rango", "/crud-staff", "/crud-users", "/crud-pcampo", "/tareo-personal", "/horario-trabajo"].includes(location.pathname);
+  const showNav = ["/inicio", "/inventario", "/crud-categoria", "/crud-material", "/crud-registro-mat", "/personal", "/crud-personal", "/admin-personal", "/crud-gremio", "/crud-rango", "/crud-staff", "/crud-users", "/crud-pcampo", "/tareo-personal", "/horario-trabajo", "/asignacion-horario"].includes(location.pathname);
 
   return(
       <>
@@ -63,6 +64,7 @@ function Content(){
                 <Route path="/crud-pcampo" element={<PrivateRoute><CrudPcampo/></PrivateRoute>}/>
                 <Route path="/tareo-personal" element={<PrivateRoute><RegistroTareoDiario/></PrivateRoute>}/>
                 <Route path="/horario-trabajo" element={<PrivateRoute><CrudHorarioTrabajo/></PrivateRoute>}/>
+                <Route path="/asignacion-horario" element={<PrivateRoute><CrudAsignacionHorario/></PrivateRoute>}/>
             </Routes>
         </div>
           <Footer/>

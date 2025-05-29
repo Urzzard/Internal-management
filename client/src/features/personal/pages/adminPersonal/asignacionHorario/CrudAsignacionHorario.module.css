@@ -1,0 +1,131 @@
+/* CrudHorarioTrabajo.module.css */
+.crudContainer {
+    padding: 20px;
+    background-color: #f9f9f9;
+}
+.crudContainer h2 {
+    margin-bottom: 20px;
+}
+
+.createButton, .addButton, .saveButton, .cancelButton, .editButton, .deleteButton, .removeButtonSmall {
+    padding: 8px 15px;
+    margin: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.createButton, .addButton {
+    background-color: #007bff; /* Azul */
+    color: white;
+}
+.createButton:hover, .addButton:hover {
+    background-color: #0056b3;
+}
+
+.saveButton { background-color: #28a745; color: white; }
+.saveButton:hover { background-color: #218838; }
+.cancelButton { background-color: #6c757d; color: white; }
+.cancelButton:hover { background-color: #5a6268; }
+.editButton { background-color: #ffc107; color: black; }
+.editButton:hover { background-color: #e0a800; }
+.deleteButton, .removeButtonSmall { background-color: #dc3545; color: white; }
+.deleteButton:hover, .removeButtonSmall:hover { background-color: #c82333; }
+.removeButtonSmall { padding: 5px 10px; font-size: 0.8em; }
+
+
+.modal { /* Estilos para el contenedor del formulario si lo haces tipo modal */
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+.modalContent h3{
+    margin-top: 0;
+}
+
+.formGroup, .formGroupCheckbox, .formGroupCheckboxSmall {
+    margin-bottom: 15px;
+}
+.formGroup label, .formGroupCheckbox label, .formGroupCheckboxSmall label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.formGroup input[type="text"],
+.formGroup input[type="number"],
+.formGroup input[type="time"],
+.formGroup textarea,
+.formGroup select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+.formGroup textarea {
+    min-height: 60px;
+    resize: vertical;
+}
+.formGroupCheckbox input, .formGroupCheckboxSmall input {
+    margin-right: 8px;
+    vertical-align: middle;
+}
+.formGroupCheckboxSmall label {
+    display: inline;
+    font-weight: normal;
+}
+
+
+.errorText {
+    color: red;
+    font-size: 0.85em;
+    display: block;
+    margin-top: 3px;
+}
+
+.detalleDiaItem {
+    border: 1px solid #eee;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    background-color: #fdfdfd;
+}
+.detalleDiaItem h5 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.formGrid { /* Para alinear campos de DetalleDiaHorario */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive */
+    gap: 10px 15px;
+}
+
+.formActions {
+    margin-top: 20px;
+    text-align: right;
+}
+
+/* Tabla de datos */
+.dataTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+.dataTable th, .dataTable td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+.dataTable th {
+    background-color: #f0f0f0;
+}
+.dataTable tr:nth-child(even) {
+    background-color: #f9f9f9;
+}

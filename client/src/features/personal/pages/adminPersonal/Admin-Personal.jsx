@@ -157,6 +157,9 @@ export function AdminPersonal(){
                     <a href='/horario-trabajo' className={styles.adminlink}>
                         <h2>GESTION DE HORARIO DE TRABAJO</h2>
                     </a>
+                    <a href='/asignacion-horario' className={styles.adminlink}>
+                        <h2>ASIGNACION DE HORARIO DE TRABAJO</h2>
+                    </a>
                     
                 </div>
             )}
