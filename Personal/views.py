@@ -26,6 +26,7 @@ from weasyprint import HTML
 from django.utils import timezone
 from django.db import transaction, models
 from datetime import timedelta, datetime
+from decimal import Decimal
 
 
 class PaisViewSet(viewsets.ReadOnlyModelViewSet):
@@ -277,154 +278,197 @@ class PCampoView(viewsets.ModelViewSet):
         return response
 
 #NEW VIEWS
-
+@transaction.atomic
 def procesar_o_actualizar_jornada_laboral(personal_id, fecha_jornada):
     """
-    Toma el ID del personal y una fecha, busca las marcaciones efectivas del día,
-    y crea o actualiza el registro JornadaLaboral con los cálculos correspondientes.
-    Retorna el objeto JornadaLaboral procesado o None si hay error.
+    Procesa o actualiza la JornadaLaboral para un personal y fecha dados.
+    Calcula tardanzas, horas normales, horas extra potenciales.
+    Actualiza el estado de la jornada y de las marcaciones.
     """
     try:
         personal = Personal.objects.get(pk=personal_id)
-        fecha_obj = fecha_jornada
-        if isinstance(fecha_jornada, str):
-            fecha_obj = datetime.strptime(fecha_jornada, '%Y-%m-%d').date()
+        fecha_obj = datetime.strptime(fecha_jornada, '%Y-%m-%d').date()
+    except (Personal.DoesNotExist, ValueError) as e:
+        print(f"Error al obtener personal o parsear fecha ({personal_id}, {fecha_jornada}): {e}")
+        return None
 
-        # 1. Obtener la asignación de horario activa para este personal en esta fecha
-        asignacion_activa = AsignacionHorario.objects.filter(
-            personal=personal,
-            fecha_inicio__lte=fecha_obj,
-            activo=True
-        ).filter(
-            models.Q(fecha_fin__gte=fecha_obj) | models.Q(fecha_fin__isnull=True)
-        ).order_by('-fecha_inicio').first()
+    # 1. Obtener la asignación de horario activa para este personal en esta fecha
+    asignacion_activa = AsignacionHorario.objects.filter(
+        personal=personal,
+        fecha_inicio__lte=fecha_obj,
+        activo=True
+    ).filter(
+        models.Q(fecha_fin__gte=fecha_obj) | models.Q(fecha_fin__isnull=True)
+    ).order_by('-fecha_inicio').first()
 
-        if not asignacion_activa:
-            print(f"No se encontró asignación de horario activa para {personal} en {fecha_obj}")
-            return None
-        
-        # 2. Obtener el DetalleDiaHorario para el día de la semana de la fecha_jornada
-        dia_semana_jornada = fecha_obj.weekday()
+    detalle_dia = None
+    if asignacion_activa:
         detalle_dia = DetalleDiaHorario.objects.filter(
             horario_trabajo=asignacion_activa.horario_trabajo,
-            dia_semana=dia_semana_jornada
+            dia_semana=fecha_obj.weekday()
         ).first()
-
-        if not detalle_dia or not detalle_dia.es_laborable:
-            print(f"Día no laborable o sin detalle de horario para {personal} en {fecha_obj} ({detalle_dia.get_dia_semana_display() if detalle_dia else 'N/A'})")
-            jornada, created = JornadaLaboral.objects.update_or_create(
-                personal=personal,
-                fecha=fecha_obj,
-                defaults={
-                    'detalle_dia_horario_aplicado': detalle_dia,
-                    'estado_jornada': JornadaLaboral.EstadoJornada.FERIADO_NO_LABORADO if not detalle_dia or not detalle_dia.es_laborable else JornadaLaboral.EstadoJornada.PROGRAMADA,
-                    'estado_marcaciones': JornadaLaboral.EstadoMarcaciones.COMPLETA if not detalle_dia or not detalle_dia.es_laborable else JornadaLaboral.EstadoMarcaciones.PENDIENTE_ENTRADA,
-                }
-            )
-            return jornada
         
-        # 3. Obtener las marcaciones efectivas del día para este personal
-        start_of_day = timezone.make_aware(datetime.combine(fecha_obj, datetime.min.time()))
-        end_of_day = timezone.make_aware(datetime.combine(fecha_obj, datetime.max.time()))
+    # 2. Crear/Obtener JornadaLaboral base
+    jornada, created = JornadaLaboral.objects.update_or_create(
+        personal=personal,
+        fecha=fecha_obj,
+        defaults={
+            'detalle_dia_horario_aplicado': detalle_dia,
+            'estado_marcaciones': JornadaLaboral.EstadoMarcaciones.PENDIENTE_ENTRADA,
+            'estado_jornada': JornadaLaboral.EstadoJornada.PROGRAMADA,
+            'minutos_tardanza_calculados': 0, # Reseteo explícito
+            'horas_normales_calculadas': Decimal('0.00'),
+            'horas_extra_potenciales': Decimal('0.00'),
+            'horas_extra_aprobadas': jornada.horas_extra_aprobadas if not created else Decimal('0.00'),
+            'aplica_dominical_calculado': jornada.aplica_dominical_calculado if not created else False,
+            'observaciones_supervisor': "",
+            'es_cerrada': jornada.es_cerrada if not created else False
+        }
+    )
+    
+    jornada.minutos_tardanza_calculados = 0
+    jornada.horas_normales_calculadas = Decimal('0.00')
+    jornada.horas_extra_potenciales = Decimal('0.00')
+    jornada.observaciones_supervisor = ""
 
-        marcaciones_dia = Marcacion.objects.filter(
-            personal=personal,
-            fecha_hora_efectiva__gte=start_of_day,
-            fecha_hora_efectiva__lte=end_of_day
+        
+    # 3. Si no hay detalle de día o no es laborable (y no es feriado trabajado)
+    if not detalle_dia or not detalle_dia.es_laborable:
+        es_feriado = CalendarioFeriado.objects.filter(fecha=fecha_obj).exists()
+        start_of_day_dt = timezone.make_aware(datetime.combine(fecha_obj, datetime.min.time()))
+        end_of_day_dt = timezone.make_aware(datetime.combine(fecha_obj, datetime.max.time()))
+        marcaciones_dia_feriado = Marcacion.objects.filter(
+            personal=personal, fecha_hora_efectiva__gte=start_of_day_dt, fecha_hora_efectiva__lte=end_of_day_dt
         ).order_by('fecha_hora_efectiva')
+        m_entrada_feriado = marcaciones_dia_feriado.filter(tipo_marcacion=Marcacion.Tipo.ENTRADA).first()
+        m_salida_feriado = marcaciones_dia_feriado.filter(tipo_marcacion=Marcacion.Tipo.SALIDA).last()
 
-        m_entrada = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.ENTRADA).first()
-        m_inicio_desc = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.INICIO_DESCANSO).first()
-        m_fin_desc = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.FIN_DESCANSO).first()
-        m_salida = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.SALIDA).last()
+        jornada.marcacion_entrada = m_entrada_feriado
+        jornada.marcacion_salida = m_salida_feriado
 
-        # 4. Crear o actualizar JornadaLaboral
-        jornada, created = JornadaLaboral.objects.update_or_create(
-            personal=personal,
-            fecha=fecha_obj,
-            defaults={
-                'detalle_dia_horario_aplicado': detalle_dia,
-                'marcacion_entrada': m_entrada,
-                'marcacion_inicio_descanso': m_inicio_desc,
-                'marcacion_fin_descanso': m_fin_desc,
-                'marcacion_salida': m_salida,
-            }
-        )
-
-        # 5. Realizar Cálculos (simplificados por ahora)
-        tardanza_minutos = 0
-        horas_normales = timedelta()
-        horas_extra_pot = timedelta()
-
-        if m_entrada:
-            hora_fin_tolerancia_dt = datetime.combine(fecha_obj, detalle_dia.hora_fin_tolerancia_entrada)
-            if timezone.is_naive(hora_fin_tolerancia_dt):
-                 hora_fin_tolerancia_dt = timezone.make_aware(hora_fin_tolerancia_dt)
-
-            if m_entrada.fecha_hora_efectiva > hora_fin_tolerancia_dt:
-                tardanza = m_entrada.fecha_hora_efectiva - hora_fin_tolerancia_dt
-                tardanza_minutos = int(tardanza.total_seconds() / 60)
-
-        if m_entrada and m_salida:
-            tiempo_bruto_trabajado = m_salida.fecha_hora_efectiva - m_entrada.fecha_hora_efectiva
-            tiempo_descanso = timedelta()
-
-            if m_inicio_desc and m_fin_desc:
-                if m_fin_desc.fecha_hora_efectiva > m_inicio_desc.fecha_hora_efectiva:
-                    tiempo_descanso = m_fin_desc.fecha_hora_efectiva - m_inicio_desc.fecha_hora_efectiva
-
-            tiempo_neto_trabajado = tiempo_bruto_trabajado - tiempo_descanso
-            horas_jornada_teorica_td = timedelta(hours=float(detalle_dia.horas_jornada_teorica))
-
-            if tiempo_neto_trabajado > horas_jornada_teorica_td:
-                horas_normales = horas_jornada_teorica_td
-                horas_extra_pot = tiempo_neto_trabajado - horas_jornada_teorica_td
-            else:
-                horas_normales = tiempo_neto_trabajado
-                # Aquí podrías calcular horas faltantes si es necesario
-
-        jornada.minutos_tardanza_calculados = tardanza_minutos
-        jornada.horas_normales_calculadas = round(horas_normales.total_seconds() / 3600, 2) if horas_normales else 0.00
-        jornada.horas_extra_potenciales = round(horas_extra_pot.total_seconds() / 3600, 2) if horas_extra_pot else 0.00
-        # jornada.horas_extra_aprobadas = 0 # Se aprueban después
-
-        # Determinar estado_marcaciones y estado_jornada (lógica más compleja aquí)
-        if m_entrada and m_salida and (not detalle_dia.duracion_descanso_teorico > 0 or (m_inicio_desc and m_fin_desc)):
+        if m_entrada_feriado and m_salida_feriado:
+            jornada.estado_jornada = JornadaLaboral.EstadoJornada.FERIADO_LABORADO
+            tiempo_bruto = m_salida_feriado.fecha_hora_efectiva - m_entrada_feriado.fecha_hora_efectiva
+            jornada.horas_normales_calculadas = Decimal(tiempo_bruto.total_seconds() / 3600).quantize(Decimal("0.01"))
             jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.COMPLETA
-            if tardanza_minutos > 0:
-                jornada.estado_jornada = JornadaLaboral.EstadoJornada.TARDANZA
-            elif jornada.horas_extra_potenciales > 0:
-                 jornada.estado_jornada = JornadaLaboral.EstadoJornada.CON_HE_PENDIENTE
-            else:
-                jornada.estado_jornada = JornadaLaboral.EstadoJornada.PRESENTE_COMPLETA
-        elif not m_entrada:
-            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.PENDIENTE_ENTRADA
-            jornada.estado_jornada = JornadaLaboral.EstadoJornada.AUSENTE_NJ
-        elif not m_salida:
-            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.PENDIENTE_SALIDA
-            jornada.estado_jornada = JornadaLaboral.EstadoJornada.PRESENTE_INCOMPLETA
-        else: # Descanso incompleto u otro
-            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.REQUIERE_REVISION
-            jornada.estado_jornada = JornadaLaboral.EstadoJornada.PRESENTE_INCOMPLETA
+        elif es_feriado:
+            jornada.estado_jornada = JornadaLaboral.EstadoJornada.FERIADO_NO_LABORADO
+            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.COMPLETA
+        else:
+            jornada.estado_jornada = JornadaLaboral.EstadoJornada.PROGRAMADA
+            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.COMPLETA
+        jornada.save()
+        return jornada
 
+    # 4. Obtener marcaciones del día
+    start_of_day_dt = timezone.make_aware(datetime.combine(fecha_obj, datetime.min.time()))
+    end_of_day_dt = timezone.make_aware(datetime.combine(fecha_obj, datetime.max.time()))
+    marcaciones_dia = Marcacion.objects.filter(
+        personal=personal, fecha_hora_efectiva__gte=start_of_day_dt, fecha_hora_efectiva__lte=end_of_day_dt
+    ).order_by('fecha_hora_efectiva')
+
+    m_entrada = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.ENTRADA).first()
+    m_inicio_desc = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.INICIO_DESCANSO).first()
+    m_fin_desc = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.FIN_DESCANSO).first()
+    m_salida = marcaciones_dia.filter(tipo_marcacion=Marcacion.Tipo.SALIDA).last()
+
+    # Actualizar enlaces en JornadaLaboral
+    jornada.marcacion_entrada = m_entrada
+    jornada.marcacion_inicio_descanso = m_inicio_desc
+    jornada.marcacion_fin_descanso = m_fin_desc
+    jornada.marcacion_salida = m_salida
+
+    current_obs = []
+
+    # 5. Lógica de Cálculos y Estados
+    if not m_entrada:
+        jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.PENDIENTE_ENTRADA
+        jornada.estado_jornada = JornadaLaboral.EstadoJornada.AUSENTE_NJ
+        jornada.observaciones_supervisor = "\n".join(current_obs)
+        jornada.save()
+        return jornada
+
+    # --- Hay ENTRADA ---
+    jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.PENDIENTE_SALIDA
+    jornada.estado_jornada = JornadaLaboral.EstadoJornada.EN_CURSO
+
+    # Calcular Tardanza
+    hora_entrada_limite_teorica = detalle_dia.hora_fin_tolerancia_entrada or detalle_dia.hora_entrada_teorica
+    entrada_limite_dt = timezone.make_aware(datetime.combine(fecha_obj, hora_entrada_limite_teorica))
+    if m_entrada.fecha_hora_efectiva > entrada_limite_dt:
+        tardanza_delta = m_entrada.fecha_hora_efectiva - entrada_limite_dt
+        jornada.minutos_tardanza_calculados = int(tardanza_delta.total_seconds() / 60)
+        jornada.estado_jornada = JornadaLaboral.EstadoJornada.TARDANZA
+
+    if not m_salida:
+        jornada.observaciones_supervisor = "\n".join(current_obs)
         jornada.save()
         return jornada
     
-    except Personal.DoesNotExist:
-        print(f"Error: Personal con ID {personal_id} no encontrado.")
-        return None
-    except AsignacionHorario.DoesNotExist:
-        print(f"Error: No hay asignación de horario para {personal_id} en {fecha_jornada}.")
-        return None
-    except DetalleDiaHorario.DoesNotExist:
-        print(f"Error: No hay detalle de día para el horario asignado a {personal_id} en {fecha_jornada}.")
-        return None
-    except Exception as e:
-        print(f"Error general procesando jornada para {personal_id} en {fecha_jornada}: {e}")
-        # Considera loggear el traceback completo aquí para depuración
-        import traceback
-        traceback.print_exc()
-        return None
+    if m_salida.fecha_hora_efectiva <= m_entrada.fecha_hora_efectiva:
+        jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.REQUIERE_REVISION
+        jornada.observaciones_supervisor += "Error: Salida antes o igual a entrada. "
+        jornada.observaciones_supervisor = "\n".join(current_obs)
+        jornada.save()
+        return jornada
+
+    tiempo_bruto_total = m_salida.fecha_hora_efectiva - m_entrada.fecha_hora_efectiva
+    tiempo_descanso_efectivo = timedelta()
+    descanso_marcado_ok = False
+
+    if detalle_dia.duracion_descanso_teorico > 0:
+        if m_inicio_desc and m_fin_desc:
+            if m_fin_desc.fecha_hora_efectiva > m_inicio_desc.fecha_hora_efectiva:
+                tiempo_descanso_efectivo = m_fin_desc.fecha_hora_efectiva - m_inicio_desc.fecha_hora_efectiva
+                descanso_marcado_ok = True
+            else:
+                current_obs.append("Error: Marcaciones de descanso inconsistentes.")
+                jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.DESCANSO_INCOMPLETO
+        elif m_inicio_desc and not m_fin_desc:
+            current_obs.append("Falta marcación de fin de descanso.")
+            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.DESCANSO_INCOMPLETO
+        elif not m_inicio_desc and m_fin_desc:
+            current_obs.append("Falta marcación de inicio de descanso.")
+            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.DESCANSO_INCOMPLETO
+        else:
+            current_obs.append("No se marcaron descansos, se asume el tiempo teórico.")
+            tiempo_descanso_efectivo = timedelta(minutes=detalle_dia.duracion_descanso_teorico)
+            descanso_marcado_ok = True
+    else:
+        descanso_marcado_ok = True
+
+    tiempo_neto_trabajado_td = tiempo_bruto_total - tiempo_descanso_efectivo
+    if tiempo_neto_trabajado_td < timedelta(0): 
+        current_obs.append("Alerta: Cálculo de tiempo neto resultó negativo, ajustado a 0. Revisar marcaciones.")
+        tiempo_neto_trabajado_td = timedelta(0)
+        jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.REQUIERE_REVISION
+
+    horas_jornada_teorica_td = timedelta(hours=float(detalle_dia.horas_jornada_teorica))
+
+    if tiempo_neto_trabajado_td > horas_jornada_teorica_td:
+        jornada.horas_normales_calculadas = Decimal(horas_jornada_teorica_td.total_seconds() / 3600).quantize(Decimal("0.01"))
+        horas_extra_td = tiempo_neto_trabajado_td - horas_jornada_teorica_td
+        jornada.horas_extra_potenciales = Decimal(horas_extra_td.total_seconds() / 3600).quantize(Decimal("0.01"))
+        if jornada.estado_jornada != JornadaLaboral.EstadoJornada.TARDANZA:
+            jornada.estado_jornada = JornadaLaboral.EstadoJornada.CON_HE_PENDIENTE
+    else:
+        jornada.horas_normales_calculadas = Decimal(tiempo_neto_trabajado_td.total_seconds() / 3600).quantize(Decimal("0.01"))
+        if jornada.estado_jornada != JornadaLaboral.EstadoJornada.TARDANZA:
+            jornada.estado_jornada = JornadaLaboral.EstadoJornada.PRESENTE_COMPLETA
+    
+    if jornada.estado_marcaciones == JornadaLaboral.EstadoMarcaciones.PENDIENTE_SALIDA :
+        if m_entrada and m_salida and descanso_marcado_ok :
+            jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.COMPLETA
+        elif not descanso_marcado_ok and detalle_dia.duracion_descanso_teorico > 0:
+            pass
+        else:
+             jornada.estado_marcaciones = JornadaLaboral.EstadoMarcaciones.REQUIERE_REVISION
+
+
+    jornada.observaciones_supervisor = "\n".join(current_obs)
+    jornada.save()
+    return jornada
+
 
 class HorarioTrabajoViewSet(viewsets.ModelViewSet):
     """
